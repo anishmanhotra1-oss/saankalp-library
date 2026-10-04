@@ -4,8 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>SAANKALP — Virtual Library</title>
-<!-- Favicon SVG -->
+<!-- Favicon SVG & PWA Web App Manifest -->
 <link rel="icon" type="image/svg+xml" href="/logo.svg">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2563eb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SAANKALP">
+<link rel="apple-touch-icon" href="/logo.svg">
 <!-- UPSC Newspaper Analyzer Scoped CSS -->
 <link rel="stylesheet" href="/upsc-analyzer/css/upsc-analyzer.css">
 <!-- Socket.IO Client -->
@@ -583,6 +589,7 @@ body{overflow:hidden}
     </div>
 
     <button type="submit" class="btn primary" style="width:100%; margin-top:20px; padding:12px;">Save Profile Changes</button>
+    <button type="button" class="btn" id="pwaInstallBtn" onclick="triggerPwaInstall()" style="width:100%; margin-top:10px; padding:11px; background:#eff6ff; color:#2563eb; border-color:#bfdbfe; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px;">📲 Install App on Phone</button>
     <button type="button" class="btn danger" id="profileDrawerLogoutBtn" style="width:100%; margin-top:8px;">Sign Out Account</button>
   </form>
 </div>
@@ -2652,6 +2659,37 @@ if (nextBtn) {
 
 checkAuthSession();
 setInterval(tick,1000);
+
+// Register PWA Service Worker & Install Prompt
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SAANKALP PWA Service Worker registered:', reg.scope))
+      .catch(err => console.warn('PWA SW registration failed:', err));
+  });
+}
+
+let deferredPwaPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPwaPrompt = e;
+  const pwaBtn = document.getElementById('pwaInstallBtn');
+  if (pwaBtn) pwaBtn.style.display = 'flex';
+});
+
+function triggerPwaInstall() {
+  if (deferredPwaPrompt) {
+    deferredPwaPrompt.prompt();
+    deferredPwaPrompt.userChoice.then((choice) => {
+      if (choice.outcome === 'accepted') {
+        toast('🎉 Thank you for installing SAANKALP!');
+      }
+      deferredPwaPrompt = null;
+    });
+  } else {
+    toast('📲 Tap your browser menu (⋮ or Share) and select "Add to Home screen"');
+  }
+}
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>

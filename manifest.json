@@ -1,0 +1,19 @@
+{
+  "name": "SAANKALP — Intelligent Study Hub",
+  "short_name": "SAANKALP",
+  "description": "Dedicated Virtual Library & Serious Study Space for Aspirants",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
