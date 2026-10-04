@@ -1,0 +1,108 @@
+{
+  "papers": [
+    {
+      "paper": "GS-I",
+      "title": "General Studies-I: History, Heritage, Geography & Society",
+      "topics": [
+        { "id": "GS1-01", "text": "Indian Culture – Salient aspects of Art Forms, Literature and Architecture from ancient to modern times." },
+        { "id": "GS1-02", "text": "Modern Indian History from about the middle of the eighteenth century until the present – significant events, personalities, issues." },
+        { "id": "GS1-03", "text": "The Freedom Struggle — its various stages and important contributors/contributions from different parts of the country." },
+        { "id": "GS1-04", "text": "Post-independence Consolidation and Reorganization within the country." },
+        { "id": "GS1-05", "text": "History of the World including events from the 18th century such as Industrial Revolution, world wars, Redrawal of National Boundaries, Colonization, Decolonization, political philosophies like Communism, Capitalism, Socialism etc.— their forms and effect on society." },
+        { "id": "GS1-06", "text": "Salient features of Indian Society, Diversity of India." },
+        { "id": "GS1-07", "text": "Role of Women and Women’s Organization, Population and Associated Issues, Poverty and Developmental issues, Urbanization, their problems and their remedies." },
+        { "id": "GS1-08", "text": "Effects of Globalization on Indian society." },
+        { "id": "GS1-09", "text": "Social Empowerment, Communalism, Regionalism & Secularism." },
+        { "id": "GS1-10", "text": "Salient features of World’s Physical Geography." },
+        { "id": "GS1-11", "text": "Distribution of Key Natural Resources across the world (including South Asia and the Indian sub-continent); factors responsible for the location of primary, secondary, and tertiary sector industries in various parts of the world (including India)." },
+        { "id": "GS1-12", "text": "Important Geophysical Phenomena such as earthquakes, Tsunami, Volcanic activity, cyclones etc., geographical features and their location-changes in critical geographical features (including water-bodies and ice-caps) and in flora and fauna and the effects of such changes." }
+      ]
+    },
+    {
+      "paper": "GS-II",
+      "title": "General Studies-II: Governance, Constitution, Polity, Social Justice & International Relations",
+      "topics": [
+        { "id": "GS2-01", "text": "Indian Constitution—Historical Underpinnings, Evolution, Features, Amendments, Significant Provisions and Basic Structure." },
+        { "id": "GS2-02", "text": "Functions and Responsibilities of the Union and the States, Issues and Challenges Pertaining to the Federal Structure, Devolution of Powers and Finances up to Local Levels and Challenges Therein." },
+        { "id": "GS2-03", "text": "Separation of Powers between various organs Dispute Redressal Mechanisms and Institutions." },
+        { "id": "GS2-04", "text": "Comparison of the Indian Constitutional Scheme with that of Other Countries." },
+        { "id": "GS2-05", "text": "Parliament and State Legislatures—Structure, Functioning, Conduct of Business, Powers & Privileges and Issues Arising out of these." },
+        { "id": "GS2-06", "text": "Structure, Organization and Functioning of the Executive and the Judiciary—Ministries and Departments of the Government; Pressure Groups and Formal/Informal Associations and their Role in the Polity." },
+        { "id": "GS2-07", "text": "Salient Features of the Representation of People’s Act." },
+        { "id": "GS2-08", "text": "Appointment to various Constitutional Posts, Powers, Functions and Responsibilities of various Constitutional Bodies." },
+        { "id": "GS2-09", "text": "Statutory, Regulatory and various Quasi-judicial Bodies." },
+        { "id": "GS2-10", "text": "Government Policies and Interventions for Development in various sectors and Issues arising out of their Design and Implementation." },
+        { "id": "GS2-11", "text": "Development Processes and the Development Industry — the Role of NGOs, SHGs, various groups and associations, donors, charities, institutional and other stakeholders." },
+        { "id": "GS2-12", "text": "Welfare Schemes for Vulnerable Sections of the Population by the Centre and States and the Performance of these Schemes; Mechanisms, Laws, Institutions and Bodies constituted for the Protection and Betterment of these Vulnerable Sections." },
+        { "id": "GS2-13", "text": "Issues Relating to Development and Management of Social Sector/Services relating to Health, Education, Human Resources." },
+        { "id": "GS2-14", "text": "Issues relating to Poverty and Hunger." },
+        { "id": "GS2-15", "text": "Important Aspects of Governance, Transparency and Accountability, E-governance- applications, models, successes, limitations, and potential; Citizens Charters, Transparency & Accountability and institutional and other measures." },
+        { "id": "GS2-16", "text": "Role of Civil Services in a Democracy." },
+        { "id": "GS2-17", "text": "India and its Neighborhood- Relations." },
+        { "id": "GS2-18", "text": "Bilateral, Regional and Global Groupings and Agreements involving India and/or affecting India’s interests." },
+        { "id": "GS2-19", "text": "Effect of Policies and Politics of Developed and Developing Countries on India’s interests, Indian Diaspora." },
+        { "id": "GS2-20", "text": "Important International Institutions, agencies and fora - their Structure, Mandate." }
+      ]
+    },
+    {
+      "paper": "GS-III",
+      "title": "General Studies-III: Technology, Economic Development, Bio-diversity, Environment, Security & Disaster Management",
+      "topics": [
+        { "id": "GS3-01", "text": "Indian Economy and issues relating to Planning, Mobilization of Resources, Growth, Development and Employment." },
+        { "id": "GS3-02", "text": "Inclusive Growth and issues arising from it." },
+        { "id": "GS3-03", "text": "Government Budgeting." },
+        { "id": "GS3-04", "text": "Major Crops - Cropping Patterns in various parts of the country, - Different Types of Irrigation and Irrigation Systems; Storage, Transport and Marketing of Agricultural Produce and Issues and Related Constraints; E-technology in the aid of farmers." },
+        { "id": "GS3-05", "text": "Issues related to Direct and Indirect Farm Subsidies and Minimum Support Prices; Public Distribution System - Objectives, Functioning, Limitations, Revamping; Issues of Buffer Stocks and Food Security; Technology Missions; Economics of Animal-Rearing." },
+        { "id": "GS3-06", "text": "Food Processing and Related Industries in India- Scope’ and Significance, Location, Upstream and Downstream Requirements, Supply Chain Management." },
+        { "id": "GS3-07", "text": "Land Reforms in India." },
+        { "id": "GS3-08", "text": "Effects of Liberalization on the Economy, Changes in Industrial Policy and their Effects on Industrial Growth." },
+        { "id": "GS3-09", "text": "Infrastructure: Energy, Ports, Roads, Airports, Railways etc." },
+        { "id": "GS3-10", "text": "Investment Models." },
+        { "id": "GS3-11", "text": "Science and Technology- Developments and their Applications and Effects in Everyday Life." },
+        { "id": "GS3-12", "text": "Achievements of Indians in Science & Technology; Indigenization of Technology and Developing New Technology." },
+        { "id": "GS3-13", "text": "Awareness in the fields of IT, Space, Computers, Robotics, Nano-technology, Bio-technology and issues relating to Intellectual Property Rights." },
+        { "id": "GS3-14", "text": "Conservation, Environmental Pollution and Degradation, Environmental Impact Assessment." },
+        { "id": "GS3-15", "text": "Disaster and Disaster Management." },
+        { "id": "GS3-16", "text": "Linkages between Development and Spread of Extremism." },
+        { "id": "GS3-17", "text": "Role of External State and Non-state Actors in creating challenges to Internal Security." },
+        { "id": "GS3-18", "text": "Challenges to Internal Security through Communication Networks, Role of Media and Social Networking Sites in Internal Security Challenges, Basics of Cyber Security; Money-Laundering and its prevention." },
+        { "id": "GS3-19", "text": "Security Challenges and their Management in Border Areas - Linkages of Organized Crime with Terrorism." },
+        { "id": "GS3-20", "text": "Various Security Forces and Agencies and their Mandate." }
+      ]
+    },
+    {
+      "paper": "GS-IV",
+      "title": "General Studies-IV: Ethics, Integrity and Aptitude",
+      "topics": [
+        { "id": "GS4-01", "text": "Ethics and Human Interface: Essence, Determinants and Consequences of Ethics in Human Actions; Dimensions of Ethics; Ethics in Private and Public Relationships. Human Values - Lessons from the Lives and Teachings of Great Leaders, Reformers and Administrators; Role of Family Society and Educational Institutions in Inculcating Values." },
+        { "id": "GS4-02", "text": "Attitude: Content, Structure, Function; its Influence and Relation with Thought and Behaviour; Moral and Political Attitudes; Social Influence and Persuasion." },
+        { "id": "GS4-03", "text": "Aptitude and Foundational Values for Civil Service, Integrity, Impartiality and Non-partisanship, Objectivity, Dedication to Public Service, Empathy, Tolerance and Compassion towards the weaker-sections." },
+        { "id": "GS4-04", "text": "Emotional Intelligence-Concepts, and their Utilities and Application in Administration and Governance." },
+        { "id": "GS4-05", "text": "Contributions of Moral Thinkers and Philosophers from India and World." },
+        { "id": "GS4-06", "text": "Public/Civil Service Values and Ethics in Public Administration: Status and Problems; Ethical Concerns and Dilemmas in Government and Private Institutions; Laws, Rules, Regulations and Conscience as Sources of Ethical Guidance; Accountability and Ethical Governance; Strengthening of Ethical and Moral Values in Governance; Ethical Issues in International Relations and Funding; Corporate Governance." },
+        { "id": "GS4-07", "text": "Probity in Governance: Concept of Public Service; Philosophical Basis of Governance and Probity; Information Sharing and Transparency in Government, Right to Information, Codes of Ethics, Codes of Conduct, Citizen’s Charters, Work Culture, Quality of Service Delivery, Utilization of Public Funds, Challenges of Corruption." },
+        { "id": "GS4-08", "text": "Case Studies on Attitude, Integrity, Probity and Ethical Dilemmas in Public Life." }
+      ]
+    },
+    {
+      "paper": "Prelims",
+      "title": "UPSC Civil Services Prelims (General Studies Paper-I)",
+      "topics": [
+        { "id": "PRE-01", "text": "Current Events of National and International Importance." },
+        { "id": "PRE-02", "text": "History of India and Indian National Movement." },
+        { "id": "PRE-03", "text": "Indian and World Geography - Physical, Social, Economic Geography of India and the World." },
+        { "id": "PRE-04", "text": "Indian Polity and Governance - Constitution, Political System, Panchayati Raj, Public Policy, Rights Issues, etc." },
+        { "id": "PRE-05", "text": "Economic and Social Development - Sustainable Development, Poverty, Inclusion, Demographics, Social Sector Initiatives, etc." },
+        { "id": "PRE-06", "text": "General issues on Environmental Ecology, Bio-diversity and Climate Change - that do not require subject specialization." },
+        { "id": "PRE-07", "text": "General Science." }
+      ]
+    },
+    {
+      "paper": "Essay",
+      "title": "UPSC Civil Services Mains Essay Paper",
+      "topics": [
+        { "id": "ESS-01", "text": "Essay Writing - Philosophical, Socio-Economic, Geopolitics, Governance & Environmental Topics." }
+      ]
+    }
+  ]
+}

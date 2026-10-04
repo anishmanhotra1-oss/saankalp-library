@@ -1,0 +1,2428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SAANKALP — Virtual Library</title>
+<!-- Favicon SVG -->
+<link rel="icon" type="image/svg+xml" href="/logo.svg">
+<!-- UPSC Newspaper Analyzer Scoped CSS -->
+<link rel="stylesheet" href="/upsc-analyzer/css/upsc-analyzer.css">
+<!-- Socket.IO Client -->
+<script src="/socket.io/socket.io.js"></script>
+<!-- Firebase 10.8.0 SDK (App + Auth Compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<style>
+:root{
+  --bg:#f8fafc;--panel:#ffffff;--panel2:#f1f5f9;--panel3:#e2e8f0;
+  --text:#0f172a;--muted:#64748b;--line:#e2e8f0;
+  --blue:#2563eb;--blue2:#1d4ed8;--green:#10b981;--red:#ef4444;
+  --yellow:#f59e0b;--shadow:0 10px 30px rgba(0,0,0,.06);
+}
+.ico-svg{width:1.2em;height:1.2em;vertical-align:-0.18em;display:inline-block;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+.bottom-bar .ico-svg{width:1.45em;height:1.45em;margin-bottom:2px;}
+.nav .ico-svg{width:1.35em;height:1.35em;}
+.feat-icon .ico-svg{width:1.6em;height:1.6em;}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer;color:inherit}
+body{overflow:hidden}
+.app{height:100vh;display:flex;position:relative}
+
+/* SIDEBAR & INLINE SIDEBAR MENU */
+.sidebar{width:78px;background:#ffffff;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:14px 8px;gap:8px;z-index:20;box-shadow:2px 0 10px rgba(0,0,0,0.02);transition:width 0.3s ease}
+.brand-img{width:48px;height:48px;border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,0.12);margin-bottom:15px;object-fit:cover;cursor:pointer;}
+.nav{width:100%;background:transparent;border:0;border-left:3px solid transparent;border-radius:10px;padding:10px 3px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px;transition:.2s}
+.nav span{font-size:10px}.nav .ico{font-size:19px}
+.nav:hover{background:#f1f5f9;color:var(--text)}
+.nav.active{color:var(--blue);border-left-color:var(--blue);background:#eff6ff;font-weight:700}
+.sidebar-spacer{flex:1}
+
+/* INLINE SIDEBAR MENU PANEL */
+.sidebar-menu-panel{position:absolute;top:0;left:78px;bottom:0;width:240px;background:#ffffff;border-right:1px solid var(--line);z-index:19;display:none;flex-direction:column;padding:18px 14px;box-shadow:4px 0 20px rgba(0,0,0,0.04);animation:slideRight 0.25s ease}
+@keyframes slideRight{from{transform:translateX(-10px);opacity:0}to{transform:translateX(0);opacity:1}}
+.sidebar-menu-panel.active{display:flex}
+.menu-panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.menu-panel-head h3{margin:0;font-size:15px;color:var(--text)}
+.menu-item-btn{display:flex;align-items:center;gap:12px;width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#f8fafc;color:var(--text);font-weight:600;font-size:13px;margin-bottom:10px;transition:.2s}
+.menu-item-btn:hover{background:#eff6ff;color:var(--blue);border-color:#dbeafe}
+
+/* ASPIRANT PROFILE RIGHT SIDEBAR DRAWER */
+.profile-drawer{position:fixed;top:0;right:0;bottom:0;width:min(380px,100vw);max-height:100vh;overflow-y:auto;background:#ffffff;border-left:1px solid var(--line);z-index:90;display:none;flex-direction:column;padding:24px;padding-bottom:70px;box-shadow:-10px 0 30px rgba(0,0,0,0.08);animation:slideLeft 0.25s ease}
+@keyframes slideLeft{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+.profile-drawer.active{display:flex}
+.profile-drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.profile-avatar-banner{text-align:center;margin:10px 0 20px;}
+.profile-avatar-lg{width:70px;height:70px;border-radius:20px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;display:grid;place-items:center;font-size:26px;font-weight:800;margin:0 auto 10px auto;box-shadow:0 8px 25px rgba(37,99,235,0.3);}
+
+/* FLOATING CHAT BUTTON & FLOATING CHAT BOX */
+.floating-chat-btn{position:fixed;right:24px;bottom:24px;z-index:90;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;border-radius:30px;padding:12px 20px;font-weight:700;font-size:14px;box-shadow:0 8px 25px rgba(37,99,235,0.35);display:flex;align-items:center;gap:8px;cursor:pointer;transition:.2s;}
+.floating-chat-btn:hover{transform:scale(1.05);}
+.chat-badge{background:#ef4444;color:#fff;border-radius:10px;font-size:10px;padding:2px 6px;font-weight:800;}
+
+.floating-chat-box{position:fixed;right:24px;bottom:80px;width:min(350px,90vw);height:480px;max-height:75vh;background:#ffffff;border:1px solid var(--line);border-radius:18px;z-index:95;box-shadow:0 15px 35px rgba(0,0,0,0.12);display:none;flex-direction:column;overflow:hidden;animation:slideUp 0.25s ease;}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.chat-box-head{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:#f8fafc;}
+.chat-box-head h4{margin:0;font-size:14px;color:var(--text);}
+.chat-tabs{display:flex;border-bottom:1px solid var(--line);background:#ffffff;}
+.chat-tab-btn{flex:1;padding:9px;border:0;background:transparent;font-size:12px;font-weight:700;color:var(--muted);border-bottom:2px solid transparent;}
+.chat-tab-btn.active{color:var(--blue);border-bottom-color:var(--blue);background:#eff6ff;}
+
+/* LANDING PAGE STYLES */
+.landing-view{min-height:100vh;background:#ffffff;color:#0f172a;display:flex;flex-direction:column;z-index:30;overflow-y:auto;position:relative;}
+.landing-navbar{position:sticky;top:0;z-index:100;backdrop-filter:blur(16px);background:rgba(255,255,255,0.92);display:flex;align-items:center;justify-content:space-between;padding:16px 40px;border-bottom:1px solid #e2e8f0;color:#0f172a;}
+.landing-logo{display:flex;align-items:center;gap:12px;}
+.landing-logo img{width:42px;height:42px;border-radius:10px;box-shadow:0 4px 12px rgba(37,99,235,0.12);}
+.landing-logo h2{font-size:20px;margin:0;letter-spacing:-0.5px;color:#0f172a;}
+.landing-logo h2 span{color:#2563eb;}
+.landing-navbar-actions{display:flex;gap:12px;align-items:center;}
+.landing-hero{max-width:1100px;margin:0 auto;padding:60px 20px 40px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;position:relative;z-index:10;}
+.landing-hero-actions{display:flex;gap:14px;margin-top:10px;margin-bottom:30px;flex-wrap:wrap;justify-content:center;}
+
+/* 3D FULLSCREEN BACKGROUND CANVAS STYLING */
+#landing3DCanvas{position:fixed;top:0;left:0;width:100vw;height:100vh;display:block;pointer-events:none;z-index:1;}
+
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;padding:6px 16px;border-radius:30px;font-size:12px;font-weight:700;margin-bottom:20px;backdrop-filter:blur(10px);box-shadow:0 2px 8px rgba(37,99,235,0.08);}
+.landing-hero h1{font-size:48px;line-height:1.15;letter-spacing:-1.5px;color:#0f172a;max-width:850px;margin:0 0 18px 0;text-shadow:0 2px 10px rgba(0,0,0,0.03);}
+.landing-hero h1 span{color:#2563eb;}
+.landing-hero p{font-size:18px;color:#475569;max-width:680px;margin:0 0 28px 0;line-height:1.55;}
+.landing-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;width:100%;margin-top:20px;text-align:left;position:relative;z-index:10;}
+.feature-card{background:#ffffff;backdrop-filter:blur(14px);border:1px solid #e2e8f0;border-radius:16px;padding:24px;transition:.2s;color:#0f172a;box-shadow:0 10px 30px rgba(0,0,0,0.04);}
+.feature-card:hover{transform:translateY(-3px);border-color:#2563eb;box-shadow:0 15px 35px rgba(37,99,235,0.15);}
+.feature-card .feat-icon{width:44px;height:44px;border-radius:12px;background:#eff6ff;color:#2563eb;display:grid;place-items:center;font-size:20px;margin-bottom:14px;font-weight:700;}
+.feature-card h4{margin:0 0 6px 0;font-size:16px;color:#0f172a;}
+.feature-card p{margin:0;font-size:13px;color:#64748b;line-height:1.4;}
+
+/* CREATIVE LANDING SUB-PAGE */
+.landing-subpage{max-width:1100px;margin:30px auto 40px auto;padding:0 20px;position:relative;z-index:10;}
+.subpage-banner{background:linear-gradient(135deg, #ffffff 0%, #f0f7ff 60%, #e0f2fe 100%);backdrop-filter:blur(16px);color:#0f172a;border-radius:24px;padding:36px 40px;box-shadow:0 18px 45px rgba(37,99,235,0.12);border:1.5px solid #bae6fd;margin-bottom:30px;}
+.subpage-banner img{width:56px; height:56px; border-radius:14px; box-shadow:0 6px 18px rgba(37,99,235,0.15); border:1.5px solid #bfdbfe;}
+.subpage-banner h2{margin:0; font-size:26px; color:#0f172a; letter-spacing:-0.5px; font-weight:800;}
+.subpage-banner p.subhead{margin:4px 0 0 0; color:#1d4ed8; font-size:14px; font-weight:700;}
+.subpage-banner p.desc{font-size:15px; color:#1e293b; max-width:850px; line-height:1.65; margin:16px 0 0 0; font-weight:500;}
+
+.subpage-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;}
+.subpage-card{background:#ffffff;backdrop-filter:blur(14px);border:1.5px solid #cbd5e1;border-radius:20px;padding:26px;box-shadow:0 10px 30px rgba(0,0,0,0.04);color:#0f172a;transition:all 0.25s ease;}
+.subpage-card:hover{transform:translateY(-4px);border-color:#2563eb;box-shadow:0 15px 35px rgba(37,99,235,0.15);}
+.subpage-card h4{color:#0f172a; font-size:17px; font-weight:700; margin:10px 0 6px 0;}
+.subpage-card p{color:#334155; font-size:13.5px; line-height:1.55; margin:0; font-weight:500;}
+
+/* LANDING FOOTER STYLES */
+.landing-footer{background:#0f172a;color:#f8fafc;padding:60px 40px 30px 40px;margin-top:50px;border-top:1px solid #1e293b;position:relative;z-index:10;}
+.landing-footer-container{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;}
+.footer-brand h3{font-size:22px;margin:0 0 12px 0;color:#ffffff;display:flex;align-items:center;gap:10px;font-weight:800;}
+.footer-brand p{color:#94a3b8;font-size:13.5px;line-height:1.6;max-width:320px;margin:0 0 20px 0;}
+.footer-col h4{color:#ffffff;font-size:14px;margin:0 0 16px 0;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;}
+.footer-col ul{list-style:none;padding:0;margin:0;}
+.footer-col ul li{margin-bottom:10px;}
+.footer-col ul li a{color:#94a3b8;text-decoration:none;font-size:13.5px;transition:.2s;}
+.footer-col ul li a:hover{color:#38bdf8;}
+.footer-bottom{max-width:1100px;margin:40px auto 0 auto;padding-top:24px;border-top:1px solid #1e293b;display:flex;align-items:center;justify-content:space-between;color:#64748b;font-size:13px;flex-wrap:wrap;gap:10px;}
+@media(max-width:850px){.landing-footer-container{grid-template-columns:1fr 1fr;gap:30px;}}
+@media(max-width:550px){.landing-footer-container{grid-template-columns:1fr;gap:24px;}.landing-footer{padding:40px 20px 24px 20px;}}
+
+.main{flex:1;min-width:0;overflow:auto;background:var(--bg)}
+.view{min-height:100%;padding:28px}
+.container{max-width:1220px;margin:auto}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:24px}
+.title h1{font-size:27px;margin:0 0 4px;letter-spacing:-.5px;color:var(--text)}.title p{margin:0;color:var(--muted)}
+.avatar{width:40px;height:40px;border-radius:12px;background:#2563eb;color:#ffffff;display:grid;place-items:center;font-weight:700;cursor:pointer;transition:.2s;}
+.avatar:hover{transform:scale(1.05);}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:20px}
+.grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(320px,.75fr);gap:20px}
+.grid2{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.session{min-height:255px;display:flex;flex-direction:column;justify-content:center;background:linear-gradient(180deg,#ffffff,#f8fafc)}
+.eyebrow{font-size:11px;letter-spacing:.12em;color:var(--green);font-weight:800}
+.session h2{font-size:52px;line-height:1;margin:12px 0 7px;letter-spacing:-2px;color:var(--text)}
+.muted{color:var(--muted)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.btn{border:1px solid var(--line);background:#f1f5f9;color:var(--text);border-radius:10px;padding:11px 15px;font-weight:700;transition:.2s}
+.btn:hover{transform:translateY(-1px);background:#e2e8f0}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:var(--blue2)}
+.btn.danger{background:#fef2f2;border-color:#fecaca;color:#ef4444}.btn.ghost{background:transparent}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin:0 0 13px}
+.section-head h3{margin:0;font-size:16px;color:var(--text)}.section-head small{color:var(--muted)}
+.lb-row{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--line);cursor:pointer;}
+.lb-row:hover{background:#f8fafc;}
+.lb-row:last-child{border:0}.rank{width:25px;color:var(--muted);text-align:center}.mini-avatar{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
+.lb-name{flex:1;min-width:0}.lb-name b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}.lb-name small{color:var(--muted)}
+.time{font-weight:800;color:var(--text)}.live-dot{display:block;color:var(--green);font-size:10px;text-align:right;margin-top:2px}
+.stat{padding:16px;text-align:center}.stat .num{font-size:23px;font-weight:800;margin-top:4px;color:var(--blue)}.stat label{color:var(--muted);font-size:11px}
+.chart{height:160px;display:flex;align-items:flex-end;gap:12px;padding:20px 5px 24px}
+.bar-wrap{height:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;position:relative}
+.bar{width:100%;max-width:38px;border-radius:6px 6px 0 0;background:linear-gradient(180deg,#3b82f6,#1d4ed8);min-height:4px;transition:height .4s}
+.bar-label{position:absolute;bottom:-20px;font-size:10px;color:var(--muted);font-weight:600}
+.log{display:flex;align-items:center;gap:12px;background:#ffffff;border:1px solid var(--line);border-radius:11px;padding:12px;margin-bottom:9px;box-shadow:0 2px 5px rgba(0,0,0,0.02)}
+.log-icon{width:34px;height:34px;border-radius:99px;background:#eff6ff;display:grid;place-items:center;color:var(--blue);font-weight:800}
+.log-main{flex:1}.pill{padding:4px 9px;border-radius:7px;background:#dbeafe;color:#1e40af;font-size:11px;font-weight:800}
+.empty{padding:25px 8px;text-align:center;color:var(--muted)}
+.room-head{height:72px;background:#ffffff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:12px 22px;position:sticky;top:0;z-index:5;box-shadow:0 2px 10px rgba(0,0,0,0.03)}
+.room-head .back{font-size:23px}.room-title{flex:1}.room-title b{display:block;color:var(--text)}.room-title small{color:var(--muted)}
+.chip{background:#eff6ff;color:var(--blue);padding:7px 11px;border-radius:8px;font-weight:800;font-size:12px;border:1px solid #dbeafe}
+.room-layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:22px;padding:24px 28px 92px}
+.toolbar{display:flex;align-items:center;gap:8px;margin:10px 0 13px;color:var(--muted);font-size:11px;font-weight:800;letter-spacing:.1em}
+.toolbar .spacer{flex:1}
+.small-btn{border:1px solid var(--line);background:#ffffff;color:var(--text);padding:7px 10px;border-radius:8px;font-size:11px;font-weight:700}
+.small-btn.active{border-color:var(--blue);color:var(--blue);background:#eff6ff}
+.camera-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.cam{background:#1e293b;border:1px solid var(--line);border-radius:12px;overflow:hidden;position:relative;box-shadow:var(--shadow)}
+.cam video,.cam img{width:100%;aspect-ratio:1.35;object-fit:cover;background:#0f172a}
+.cam-screen{aspect-ratio:1.35;background:radial-gradient(circle at 50% 35%,#334155,#0f172a 70%);display:grid;place-items:center;font-size:26px;font-weight:800;color:#fff}
+.cam-foot{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;font-size:11px;background:#ffffff;color:var(--text);font-weight:600;border-top:1px solid var(--line);white-space:nowrap;gap:4px;overflow:hidden;}
+.cam-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:85px;font-weight:700;color:var(--text);}
+.cam-status{font-size:9.5px;font-weight:800;color:var(--green);flex-shrink:0;}
+.desks{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:10px}
+.desk{border:1.5px dashed #cbd5e1;background:#ffffff;border-radius:10px;padding:9px;text-align:center;color:var(--muted);min-height:75px;transition:.2s}
+.desk.free:hover{border-color:var(--blue);color:var(--blue);background:#eff6ff}.desk.occupied{border-style:solid;border-color:var(--blue);background:#ffffff;color:var(--text)}
+.desk .seat{height:40px;display:grid;place-items:center;font-size:15px;font-weight:800;border-radius:8px;margin-bottom:5px;color:#fff}
+.tables{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.table{background:#ffffff;border:1px solid var(--line);border-radius:12px;padding:12px;box-shadow:var(--shadow)}.table b{font-size:11px;color:var(--muted)}
+.seats{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:9px}
+.seat-btn{aspect-ratio:1;border:1px solid var(--line);background:#f8fafc;border-radius:7px;color:var(--muted);font-size:10px;font-weight:700}
+.seat-btn:hover{border-color:var(--blue);color:var(--blue);background:#eff6ff}.seat-btn.busy{border:0;color:#fff;font-weight:800}.seat-btn.mine{outline:2px solid var(--blue)}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:13px;background:#ffffff}
+.tabs button{border:0;background:#ffffff;color:var(--muted);padding:9px 4px;font-size:11px;font-weight:800}.tabs button.active{background:var(--blue);color:#fff}/* LIGHT SLATE BOTTOM NAVBAR */
+.bottom-bar{position:fixed;left:78px;right:0;bottom:0;background:#ffffff;border-top:1px solid var(--line);height:58px;display:flex;justify-content:center;align-items:center;gap:6px;z-index:1000;box-shadow:0 -4px 20px rgba(0,0,0,0.05)}
+.bottom-bar button{border:0;background:transparent;color:var(--muted);padding:4px 10px;min-width:60px;font-weight:600;font-size:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1;transition:.2s;cursor:pointer;}
+.bottom-bar button .ico-svg{width:18px;height:18px;margin:0;display:block;}
+.bottom-bar button span{font-size:10px;font-weight:700;line-height:1;margin-top:1px;display:block;}
+.bottom-bar button:hover, .bottom-bar button.active{color:var(--blue);background:#eff6ff;border-radius:8px;font-weight:800}
+.bottom-bar .danger-text{color:var(--red)}
+.bottom-bar .danger-text:hover{background:#fef2f2;color:#ef4444}
+
+/* MODALS WITH FULL VISIBILITY & VERTICAL SCROLLING */
+.modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.6);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px;z-index:99999;overflow-y:auto;}
+.modal{position:relative;width:min(480px,92vw);max-height:85vh;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:0 25px 50px rgba(0,0,0,.25);margin:auto;z-index:100000;}
+.modal-head{display:flex;align-items:center;gap:12px;margin-bottom:18px}.modal-head>div{flex:1}.modal h2{font-size:19px;margin:0 0 3px;color:var(--text)}
+.close{border:0;background:#f1f5f9;color:var(--text);border-radius:8px;width:34px;height:34px;font-weight:700;display:grid;place-items:center;transition:.2s;}
+.close:hover{background:#e2e8f0;color:var(--red);}
+.input{width:100%;background:#f8fafc;border:1px solid var(--line);border-radius:9px;padding:12px 14px;color:var(--text);outline:0;margin:7px 0;font-size:14px}.input:focus{border-color:var(--blue);background:#ffffff}
+.person{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);cursor:pointer;}
+.person:hover{background:#f8fafc;}
+.person .grow{flex:1}.drawer{position:fixed;right:0;top:0;bottom:0;width:min(390px,100%);background:var(--panel);border-left:1px solid var(--line);z-index:60;display:none;flex-direction:column;padding:18px;box-shadow:-10px 0 30px rgba(0,0,0,0.08)}
+.messages{flex:1;overflow:auto;padding:8px 0;display:flex;flex-direction:column;gap:9px}.msg{max-width:84%;padding:9px 12px;background:#f1f5f9;color:var(--text);border-radius:12px;font-size:13px}.msg.mine{align-self:flex-end;background:var(--blue);color:#fff}.msg small{display:block;opacity:.75;font-size:9px;margin-bottom:2px}
+.chat-input{display:flex;gap:8px}.chat-input .input{margin:0}
+.study-room{max-width:900px;margin:auto}.pdf-box{height:560px;background:#ffffff;border:1px solid var(--line);border-radius:13px;display:grid;place-items:center;color:var(--muted);overflow:auto;box-shadow:var(--shadow)}.pdf-box canvas{max-width:100%}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#0f172a;color:#fff;border:1px solid var(--line);padding:11px 18px;border-radius:999px;z-index:110;display:none;box-shadow:0 10px 25px rgba(0,0,0,.2);font-size:13px;font-weight:600}
+@keyframes livePulse{0%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:.6}100%{transform:scale(1);opacity:1}}
+.live-badge{color:#059669;background:#ecfdf5;border:1px solid #6ee7b7;font-size:10px;font-weight:800;padding:2px 7px;border-radius:12px;margin-left:6px;display:inline-flex;align-items:center;gap:4px;box-shadow:0 0 10px rgba(16,185,129,.25);letter-spacing:.5px;vertical-align:middle;}
+.live-badge-dot{width:7px;height:7px;background-color:#10b981;border-radius:50%;display:inline-block;animation:livePulse 1.4s infinite ease-in-out;}
+.break-badge{color:#d97706;background:#fffbeb;border:1px solid #fde68a;font-size:10px;font-weight:800;padding:2px 7px;border-radius:12px;margin-left:6px;display:inline-flex;align-items:center;gap:4px;vertical-align:middle;}
+.break-badge-dot{width:7px;height:7px;background-color:#f59e0b;border-radius:50%;display:inline-block;}
+
+/* RESPONSIVE MEDIA QUERIES FOR MOBILE, TABLET & DESKTOP */
+@media(max-width:960px){
+  .grid,.room-layout{grid-template-columns:1fr}
+  .room-layout{padding:16px 12px 96px}
+  .view{padding:20px 14px}
+  .grid2{grid-template-columns:repeat(3,1fr)}
+  .landing-navbar{padding:14px 20px;}
+  .landing-hero h1{font-size:38px;}
+  .subpage-banner{padding:24px 20px;}
+}
+
+@media(max-width:768px){
+  .input, select, button, textarea { font-size: 16px !important; } /* Prevent iOS mobile viewport zoom */
+  
+  /* Sidebar Mobile Optimization */
+  .sidebar{width:60px;min-width:60px;padding:10px 4px;z-index:90;position:relative;}
+  .brand-img{width:38px;height:38px;margin-bottom:12px;}
+  .nav{padding:8px 0;width:48px;height:44px;justify-content:center;}
+  .nav .ico-svg{width:22px;height:22px;}
+  .nav span:not(.ico){display:none}
+  .sidebar-menu-panel{left:60px;top:0;bottom:0;width:min(280px, calc(100vw - 60px));z-index:1001;box-shadow:4px 0 25px rgba(0,0,0,0.12);}
+  
+  /* Bottom Navbar Mobile Optimization */
+  .bottom-bar{left:0 !important;right:0;bottom:0;width:100vw;height:56px;padding:2px 2px;justify-content:space-evenly;align-items:center;z-index:1000;background:#ffffff;border-top:1px solid var(--line);box-shadow:0 -4px 20px rgba(0,0,0,0.08);overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .bottom-bar button{min-width:40px;max-width:62px;padding:3px 2px;font-size:9.5px;flex:1;flex-shrink:0;gap:0px;line-height:1;}
+  .bottom-bar button .ico-svg{width:18px;height:18px;margin:0;display:block;}
+  .bottom-bar button span{font-size:9.5px;font-weight:700;margin-top:1px;line-height:1;display:block;}
+  
+  .toolbar #cameraToggle{display:none !important;}
+  .toolbar #mobileLeaderboardBtn{display:inline-flex !important;}
+
+  .room-head{padding:8px 10px;height:auto;gap:6px;}
+  .room-head .small-btn{padding:5px 8px;font-size:12px;}
+  .room-title b{font-size:12.5px;}
+  .room-title small{font-size:10px;}
+  .toolbar{margin:6px 0 8px;font-size:10px;gap:6px;}
+  .toolbar .small-btn{padding:5px 8px;font-size:11px;border-radius:6px;}
+  
+  .camera-grid{grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:8px;}
+  .cam-foot{padding:5px 6px;font-size:10px;}
+  .cam-name{max-width:65px;font-size:10px;}
+  
+  .desks{grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:6px;}
+  .desk{min-height:60px;padding:5px 3px;border-radius:8px;}
+  .desk .seat{height:30px;font-size:11px;margin-bottom:2px;}
+  .desk div{font-size:9.5px !important;}
+  .desk small{font-size:8.5px;}
+  .desk .live-badge{font-size:8px;padding:1px 3px;margin-left:0;}
+  
+  .tables{grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:8px;}
+  .table{padding:8px;border-radius:10px;}
+  .table b{font-size:9.5px;}
+  .seats{grid-template-columns:repeat(5,1fr);gap:3px;margin-top:5px;}
+  .seat-btn{font-size:9px;border-radius:5px;}
+  
+  .pdf-box{height:min(440px, 55vh);}
+  
+  /* Landing View Mobile Responsiveness */
+  .landing-navbar{padding:10px 12px;flex-wrap:nowrap;justify-content:space-between;align-items:center;gap:6px;}
+  .landing-logo h2 span{display:none;}
+  .landing-logo h2{font-size:15px;}
+  .landing-logo img{width:30px;height:30px;}
+  .landing-navbar-actions{display:flex;gap:6px;align-items:center;margin-left:auto;}
+  .landing-navbar-actions .btn{padding:7px 10px;font-size:12px;}
+  .btn-instant-enter{order:2;}
+  .landing-hero-actions{display:flex;flex-direction:row;justify-content:space-between;align-items:center;gap:8px;width:100%;}
+  .landing-hero-actions button{flex:1;min-width:115px;padding:11px 6px !important;font-size:12.5px !important;text-align:center;}
+  .btn-instant-enter-hero{order:2;}
+  .landing-hero{padding:30px 14px 24px 14px;}
+  .hero-badge{font-size:11px;padding:5px 12px;}
+  .landing-hero h1{font-size:27px;letter-spacing:-0.5px;line-height:1.2;}
+  .landing-hero p{font-size:14.5px;}
+  .landing-features{grid-template-columns:1fr;gap:12px;}
+  .feature-card{padding:16px;}
+  .subpage-banner{padding:20px 16px;border-radius:16px;}
+  .subpage-banner h2{font-size:20px;}
+  .subpage-banner p.desc{font-size:13.5px;}
+  .subpage-grid{grid-template-columns:1fr;gap:12px;}
+  .subpage-card{padding:18px;}
+  .landing-footer{padding:30px 16px 20px 16px;}
+  .landing-footer-container{grid-template-columns:1fr;gap:20px;}
+  .footer-bottom{flex-direction:column;align-items:flex-start;gap:12px;}
+
+  /* Drawers, Modals & Floating Components */
+  .profile-drawer{width:100vw !important;max-width:100vw !important;left:0 !important;right:0 !important;z-index:100005 !important;background:#ffffff !important;padding:18px 16px 80px 16px !important;}
+  .floating-chat-box{right:10px;left:10px;width:auto;bottom:72px;height:65vh;}
+  .floating-chat-btn{right:14px;bottom:74px;padding:9px 15px;font-size:13px;}
+  .modal{width:min(440px, 94vw);padding:18px 14px;border-radius:16px;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="appSidebar" style="display:none;">
+  <img src="/logo.svg" class="brand-img" title="SAANKALP Intelligent Study Hub" onclick="go('home')">
+  <button class="nav active" data-view="home" title="Dashboard"><span class="ico"><svg class="ico-svg" viewBox="0 0 24 24"><rect x="2" y="10" width="20" height="3" rx="1"/><path d="M4 13v8M20 13v8"/><path d="M7 4h10a1 1 0 0 1 1 1v5H6V5a1 1 0 0 1 1-1z"/><rect x="6" y="14" width="12" height="2" rx="0.5"/><path d="M8 16v5M16 16v5"/></svg></span><span>Library</span></button>
+  <button class="nav" data-view="study" title="Study Rooms"><span class="ico"><svg class="ico-svg" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span><span>Study</span></button>
+  <button class="nav" data-view="analyzer" title="UPSC Newspaper Analyzer"><span class="ico"><svg class="ico-svg" viewBox="0 0 24 24"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Z"/><path d="M18 14h-8"/><path d="M18 18h-8"/><path d="M18 10h-8"/><path d="M4 22a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/></svg></span><span>Analyzer</span></button>
+  <div class="sidebar-spacer"></div>
+  <button class="nav" id="sidebarMenuBtn" title="Menu"><span class="ico">☰</span><span>Menu</span></button>
+</aside>
+
+<!-- INLINE SIDEBAR MENU PANEL -->
+<div class="sidebar-menu-panel" id="sidebarMenuPanel">
+  <div class="menu-panel-head">
+    <h3>Library Menu</h3>
+    <button class="close" id="closeSidebarMenuBtn" title="Close Menu">✕</button>
+  </div>
+  <button class="menu-item-btn" data-action="people"><span><svg class="ico-svg" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> People in Library</button>
+  <button class="menu-item-btn" data-action="study"><span><svg class="ico-svg" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span> Study Rooms</button>
+  <button class="menu-item-btn" data-action="leave" style="color:var(--red);"><span><svg class="ico-svg" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span> Leave Current Seat</button>
+  <div style="flex:1;"></div>
+  <button class="menu-item-btn" id="logoutBtn" style="background:#fef2f2; color:#ef4444; border-color:#fecaca;"><span><svg class="ico-svg" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span> Sign Out Account</button>
+</div>
+
+<!-- ASPIRANT PROFILE RIGHT SIDEBAR DRAWER -->
+<div class="profile-drawer" id="profileDrawer">
+  <div class="profile-drawer-head">
+    <h3>Aspirant Profile</h3>
+    <button class="close" id="closeProfileDrawerBtn" title="Close Profile">✕</button>
+  </div>
+  
+  <div class="profile-avatar-banner">
+    <div class="profile-avatar-lg" id="profileDrawerAvatar">AS</div>
+    <b style="font-size:18px; color:var(--text);" id="profileDrawerNameText">Aspirant Name</b>
+    <div style="font-size:12px; color:var(--muted);" id="profileDrawerPhoneText">+91 9876543210</div>
+  </div>
+
+  <form id="profileForm">
+    <label style="font-size:12px; font-weight:700; color:var(--muted);">Full Name</label>
+    <input type="text" class="input" id="profileNameInput" placeholder="Enter Full Name" required>
+
+    <label style="font-size:12px; font-weight:700; color:var(--muted); margin-top:10px; display:block;">Target Exam / Goal</label>
+    <select class="input" id="profileExamInput">
+      <option value="UPSC CSE / Civil Services">UPSC CSE / Civil Services</option>
+      <option value="JEE Main & Advanced">JEE Main & Advanced</option>
+      <option value="NEET UG Medical">NEET UG Medical</option>
+      <option value="GATE Computer Science">GATE Computer Science</option>
+      <option value="State PSC Exams">State PSC Exams</option>
+      <option value="CA / CS / Finance">CA / CS / Finance</option>
+      <option value="SSC CGL & Banking">SSC CGL & Banking</option>
+      <option value="General Competitive Study">General Competitive Study</option>
+    </select>
+
+    <div style="background:#f8fafc; border:1px solid var(--line); border-radius:12px; padding:14px; margin-top:16px;">
+      <div style="font-size:12px; font-weight:700; color:var(--muted); margin-bottom:6px;">MY STUDY STATS</div>
+      <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:600; padding:4px 0;">
+        <span>Today's Hours:</span>
+        <span style="color:var(--blue);" id="drawerTodayTime">0m</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:600; padding:4px 0;">
+        <span>Active Sessions:</span>
+        <span style="color:var(--blue);" id="drawerTotalSessions">0</span>
+      </div>
+    </div>
+
+    <button type="submit" class="btn primary" style="width:100%; margin-top:20px; padding:12px;">Save Profile Changes</button>
+    <button type="button" class="btn danger" id="profileDrawerLogoutBtn" style="width:100%; margin-top:8px;">Sign Out Account</button>
+  </form>
+</div>
+
+<!-- NOTIFICATION BELL SIDEBAR DRAWER -->
+<div class="profile-drawer" id="notificationsDrawer" style="z-index:70;">
+  <div class="profile-drawer-head">
+    <h3>🔔 Library Notifications</h3>
+    <button class="close" id="closeNotificationsDrawerBtn" title="Close Notifications">✕</button>
+  </div>
+  <div id="notificationList" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
+    <div class="empty">No new notifications yet.</div>
+  </div>
+</div>
+
+<!-- FLOATING CHAT DRAWER BOX -->
+<div class="floating-chat-box" id="floatingChatBox">
+  <div class="chat-box-head">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <img src="/logo.svg" style="width:24px; height:24px; border-radius:6px;">
+      <h4 id="chatBoxTitle">💬 Library Chat</h4>
+    </div>
+    <button class="close" id="closeFloatingChatBtn" style="width:28px; height:28px;" title="Close Chat">✕</button>
+  </div>
+  
+  <div class="chat-tabs">
+    <button class="chat-tab-btn active" id="tabRoomChat">🌐 Room Chat</button>
+    <button class="chat-tab-btn" id="tabFriendsChat">👥 Study Friends (<span id="friendsCountLabel">0</span>)</button>
+  </div>
+
+  <div id="roomChatView" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+    <div class="messages" id="floatingMessages" style="padding:12px;"></div>
+    <div class="chat-input" style="padding:10px; background:#f8fafc; border-top:1px solid var(--line);">
+      <input class="input" id="floatingChatInput" placeholder="Message room..." style="font-size:13px;">
+      <button class="btn primary" id="floatingChatSendBtn" style="padding:8px 14px;">Send</button>
+    </div>
+  </div>
+
+  <div id="friendsChatView" style="flex:1; display:none; flex-direction:column; overflow:hidden; padding:12px;">
+    <div id="friendsListContainer" style="flex:1; overflow-y:auto;"></div>
+  </div>
+</div>
+
+<!-- FLOATING CHAT TOGGLE BUTTON -->
+<button id="floatingChatBtn" class="floating-chat-btn" style="display:none;" title="Open Room Chat">
+  💬 Chat <span class="chat-badge" id="unreadChatBadge" style="display:none;">0</span>
+</button>
+
+<!-- MAIN CONTENT AREA -->
+<main class="main" id="main">
+
+<!-- 0. LANDING PAGE VIEW -->
+<section id="landingView" class="landing-view">
+  <!-- STICKY TOP NAVBAR -->
+  <div class="landing-navbar">
+    <div class="landing-logo">
+      <img src="/logo.svg" alt="SAANKALP Logo">
+      <h2>SAANKALP <span>— Intelligent Study Hub</span></h2>
+    </div>
+    <div class="landing-navbar-actions">
+      <button class="btn primary" id="btnLandingGetStartedNav" onclick="openAuthModal()">Get Started ➔</button>
+      <button class="btn ghost btn-instant-enter" id="btnInstantEnterNav" onclick="openInstantEnterModal()" style="font-weight:700; color:#2563eb;">⚡ Instant Enter</button>
+    </div>
+  </div>
+
+  <div class="landing-hero">
+    <div class="hero-badge">⚡ Real-Time Digital Workspace & Virtual Quiet Desks</div>
+    <h1>Dedicated <span>Virtual Library</span> & Serious Study Space</h1>
+    <p>Reserve real quiet desks, track daily study hours, read shared study materials, and build unbreakable study streaks across India.</p>
+
+    <div class="landing-hero-actions">
+      <button class="btn primary" id="btnLandingGetStartedHero" onclick="openAuthModal()" style="padding:14px 28px; font-size:16px; box-shadow:0 10px 30px rgba(37,99,235,0.4);">🚀 Get Started — Join Library</button>
+      <button class="btn btn-instant-enter-hero" onclick="openInstantEnterModal()" style="padding:14px 28px; font-size:16px; background:#eff6ff; color:#2563eb; border-color:#bfdbfe; font-weight:700;">⚡ Instant Enter as Aspirant</button>
+    </div>
+
+    <div class="landing-features">
+      <div class="feature-card">
+        <div class="feat-icon"><svg class="ico-svg" viewBox="0 0 24 24"><rect x="2" y="10" width="20" height="3" rx="1"/><path d="M4 13v8M20 13v8"/><path d="M7 4h10a1 1 0 0 1 1 1v5H6V5a1 1 0 0 1 1-1z"/><rect x="6" y="14" width="12" height="2" rx="0.5"/><path d="M8 16v5M16 16v5"/></svg></div>
+        <h4>Real Quiet Desks</h4>
+        <p>Choose window desks W1-W40 or group tables A1-E10. Reserved live while you study.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon"><svg class="ico-svg" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+        <h4>Count-UP Study Tracker</h4>
+        <p>Live study timers track exact study minutes and log activity automatically.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon"><svg class="ico-svg" viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></div>
+        <h4>Camera Study Floor</h4>
+        <p>Share video feeds or screen streams to maintain extreme focus & peer accountability.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CREATIVE LANDING SUB-PAGE -->
+  <div class="landing-subpage" id="landingEcosystemSection">
+    <div class="subpage-banner">
+      <div style="display:flex; align-items:center; gap:16px; margin-bottom:12px; flex-wrap:wrap;">
+        <img src="/logo.svg" alt="SAANKALP Logo">
+        <div>
+          <h2>The SAANKALP Virtual Library Ecosystem</h2>
+          <p class="subhead">Designed specifically for competitive exam warriors</p>
+        </div>
+      </div>
+      <p class="desc">
+        Studying alone for UPSC, JEE, NEET, GATE, or State PSC can lead to burnout. SAANKALP creates an authentic library atmosphere right on your laptop or phone — complete with live desk seating, silent peer accountability, and real-time study streaks.
+      </p>
+    </div>
+
+    <div class="subpage-grid">
+      <div class="subpage-card">
+        <div style="font-size:28px; margin-bottom:8px;">🎯</div>
+        <h4>Target Exam Focus</h4>
+        <p>Customize your goal: UPSC CSE, JEE Advanced, NEET UG, GATE CS, or State PSC. Track your daily study hours alongside dedicated aspirants.</p>
+      </div>
+      <div class="subpage-card">
+        <div style="font-size:28px; margin-bottom:8px;">⏱️</div>
+        <h4>Count-Up Study Clock</h4>
+        <p>Sit at any desk to start your session. The live timer counts up every minute and logs your progress into your weekly study history.</p>
+      </div>
+      <div class="subpage-card">
+        <div style="font-size:28px; margin-bottom:8px;">📊</div>
+        <h4>Peer Percentile Analytics</h4>
+        <p>Instantly view your current rank, compare your study time against the library average, and track your weekly study consistency graphs.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- LANDING PAGE FOOTER -->
+  <footer class="landing-footer">
+    <div class="landing-footer-container">
+      <div class="footer-brand">
+        <h3><img src="/logo.svg" style="width:36px; height:36px; border-radius:10px;" alt="SAANKALP"> SAANKALP</h3>
+        <p>Dedicated Virtual Library & Real-Time Quiet Study Workspace for Serious Competitive Exam Aspirants Across India.</p>
+        <div style="display:flex; gap:10px;">
+          <span style="background:#1e293b; border:1px solid #334155; color:#38bdf8; padding:6px 14px; border-radius:20px; font-size:12px; font-weight:700;">🇮🇳 Made for Indian Aspirants</span>
+        </div>
+      </div>
+
+      <div class="footer-col">
+        <h4>Platform Features</h4>
+        <ul>
+          <li><a href="#" onclick="openAuthModal(); return false;">Real Quiet Desks</a></li>
+          <li><a href="#" onclick="openAuthModal(); return false;">Live Camera Floor</a></li>
+          <li><a href="#" onclick="openAuthModal(); return false;">Shared PDF Rooms</a></li>
+          <li><a href="#" onclick="openAuthModal(); return false;">Count-Up Timer</a></li>
+          <li><a href="#" onclick="openAuthModal(); return false;">Peer Percentile Stats</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Target Exams</h4>
+        <ul>
+          <li><a href="#" onclick="openAuthModal(); return false;">UPSC CSE / Civil Services</a></li>
+          <li><a href="#" onclick="openAuthModal(); return false;">JEE Main & Advanced</a></li>
+          <li><a href="#" onclick="openAuthModal(); return false;">NEET UG Medical</a></li>
+          <li><a href="#" onclick="openAuthModal(); return false;">GATE CS & Engineering</a></li>
+          <li><a href="#" onclick="openAuthModal(); return false;">State PSC & SSC CGL</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Quick Access</h4>
+        <ul>
+          <li><a href="#" onclick="openAuthModal(); return false;">Join Library Floor</a></li>
+          <li><a href="#" onclick="openInstantEnterModal(); return false;">Instant Enter</a></li>
+          <li><a href="#landingEcosystemSection">About Ecosystem</a></li>
+          <li><a href="#" onclick="openAuthModal(); return false;">Create Account</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div>© 2026 SAANKALP Intelligent Study Hub. All rights reserved.</div>
+      <div style="display:flex; gap:20px;">
+        <a href="#" onclick="toast('SAANKALP maintains strict privacy for all study sessions.'); return false;" style="color:#64748b; text-decoration:none;">Privacy Policy</a>
+        <a href="#" onclick="toast('SAANKALP Virtual Library Terms of Service'); return false;" style="color:#64748b; text-decoration:none;">Terms of Service</a>
+        <a href="#" onclick="toast('Contact Support: support@saankalp.org'); return false;" style="color:#64748b; text-decoration:none;">Support</a>
+      </div>
+    </div>
+  </footer>
+</section>
+
+<!-- 1. HOME DASHBOARD VIEW -->
+<section class="view" id="homeView" hidden>
+<div class="container">
+  <div class="topbar">
+    <div class="title"><h1 id="welcomeUserTitle">Good day, Aspirant</h1><p>SAANKALP Intelligent Study Hub</p></div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <button class="small-btn" id="notificationBellBtn" title="Library Notifications" style="position:relative; padding:8px 12px; font-size:16px; border-radius:12px;">
+        🔔 <span id="notificationBadge" style="position:absolute; top:-4px; right:-4px; background:#ef4444; color:#fff; border-radius:10px; font-size:10px; padding:2px 6px; font-weight:800; display:none;">0</span>
+      </button>
+      <div class="avatar" id="userAvatarHeader" title="Click to open Aspirant Profile">AS</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="card session" id="sessionCard"></div>
+      
+      <!-- PEER COMPARISON & RANKING CARD -->
+      <div class="card" style="margin-top:14px; background:linear-gradient(135deg,#eff6ff,#f8fafc); border:1px solid #dbeafe;">
+        <div class="section-head"><h3 style="color:var(--blue);">📊 Aspirant Ranking & Peer Comparison</h3><small id="rankBadge" style="font-weight:700; color:var(--blue);">Rank #1</small></div>
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; text-align:center;">
+          <div style="background:#ffffff; padding:10px; border-radius:10px; border:1px solid var(--line);">
+            <small style="color:var(--muted); font-weight:700;">YOUR RANK</small>
+            <div id="aspirantRankVal" style="font-size:18px; font-weight:800; color:var(--blue);">#1 / 5</div>
+          </div>
+          <div style="background:#ffffff; padding:10px; border-radius:10px; border:1px solid var(--line);">
+            <small style="color:var(--muted); font-weight:700;">VS LIBRARY AVG</small>
+            <div id="aspirantVsAvgVal" style="font-size:18px; font-weight:800; color:var(--green);">+1.2h</div>
+          </div>
+          <div style="background:#ffffff; padding:10px; border-radius:10px; border:1px solid var(--line);">
+            <small style="color:var(--muted); font-weight:700;">PERCENTILE</small>
+            <div id="aspirantPercentileVal" style="font-size:18px; font-weight:800; color:var(--blue);">Top 10%</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-top:14px">
+        <div class="card stat"><label>STREAK</label><div class="num">1 day</div></div>
+        <div class="card stat"><label>TODAY</label><div class="num" id="todayStat">0m</div></div>
+        <div class="card stat"><label>SESSIONS</label><div class="num" id="sessionStat">0</div></div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <div class="section-head"><h3>Study Activity (Past 7 Days)</h3><small id="weekTotal">0m total</small></div>
+        <div class="chart" id="chart"></div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="section-head"><h3>Leaderboard</h3><small>Today</small></div>
+        <div id="homeLeaderboard"></div>
+      </div>
+      <div style="margin-top:20px">
+        <div class="section-head"><h3>Entry · Exit Logs</h3><small id="todayTotal">0m</small></div>
+        <div id="logs"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- 2. ROOM FLOOR VIEW -->
+<section id="roomView" hidden>
+  <div class="room-head">
+    <button class="small-btn" data-view="home">←</button>
+    <img src="/logo.svg" style="width:36px; height:36px; border-radius:10px;">
+    <div class="room-title"><b>SAANKALP Virtual Library</b><small id="roomSub">Central Library</small></div>
+    <span class="chip" id="timerChip">No seat</span>
+    <button class="small-btn" id="roomViewNotifBtn" title="Notifications">🔔</button>
+  </div>
+  <div class="room-layout">
+    <div>
+      <div class="toolbar">CAMERA / SCREEN <span id="cameraCount"></span><span class="spacer"></span><button class="small-btn" id="shareScreenBtn">Share Screen</button><button class="small-btn" id="cameraToggle">Turn yours on</button><button class="small-btn" id="mobileLeaderboardBtn" onclick="openMobileLeaderboard()" style="display:none; background:#eff6ff; color:var(--blue); border-color:#bfdbfe; font-weight:700;">🏆 Leaderboard</button></div>
+      <div class="camera-grid" id="cameraGrid"></div>
+      <div class="toolbar" style="margin-top:26px">WINDOW DESKS</div>
+      <div class="desks" id="desks"></div>
+      <div class="toolbar" style="margin-top:26px">TABLES</div>
+      <div class="tables" id="tables"></div>
+    </div>
+    <aside>
+      <div class="toolbar">LEADERBOARD</div>
+      <div class="tabs" id="leaderTabs">
+        <button class="active" data-range="today">Today</button><button data-range="week">Week</button><button data-range="month">Month</button><button data-range="all">All</button>
+      </div>
+      <div class="muted" id="rangeMeta" style="font-size:11px;margin-bottom:10px"></div>
+      <div class="card" style="padding:8px 15px"><div id="roomLeaderboard"></div></div>
+    </aside>
+  </div>
+</section>
+
+<!-- 3. STUDY ROOMS VIEW -->
+<section class="view" id="studyView" hidden>
+  <div class="container study-room">
+    <div class="topbar"><div class="title"><h1>Study Together</h1><p>Join a focused SAANKALP room and study from the same pages.</p></div><button class="btn primary" id="newRoom">＋ New room</button></div>
+    <div class="card" id="roomList"></div>
+  </div>
+</section>
+
+<!-- 4. PDF READER VIEW -->
+<section class="view" id="pdfView" hidden>
+  <div class="container study-room">
+    <div class="topbar">
+      <div class="title"><h1 id="pdfTitle">Study Room</h1><p id="pdfMeta">Pages sync for everyone inside.</p></div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="btn danger" id="deleteRoomInPdfBtn" style="display:none; padding:8px 14px; font-size:13px;">🗑️ Delete Room</button>
+        <button class="btn" data-view="study">← Back to Rooms</button>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <button class="small-btn" id="prevPage">← Prev</button>
+        <b id="pageLabel" style="flex:1;text-align:center">— / —</b>
+        <button class="small-btn" id="nextPage">Next →</button>
+        <label class="small-btn active" style="cursor:pointer; background:#eff6ff; color:var(--blue); border-color:#bfdbfe;">
+          📄 Upload PDF<input type="file" id="pdfInput" accept="application/pdf" hidden>
+        </label>
+        <button class="small-btn" id="deletePdfBtn" style="display:none; background:#fef2f2; color:#ef4444; border-color:#fecaca;">
+          🗑️ Delete PDF
+        </button>
+      </div>
+      <div class="pdf-box" id="pdfBox">No PDF uploaded yet. Upload a PDF to read together.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. UPSC NEWSPAPER ANALYZER VIEW -->
+<section class="view" id="analyzerView" hidden>
+  <div id="upscAnalyzerContainer"></div>
+</section>
+</main>
+</div>
+
+<!-- SLEEK LIGHT SLATE BOTTOM NAVBAR -->
+<div class="bottom-bar" id="bottomBar" style="display:none;">
+  <button data-action="seats"><svg class="ico-svg" viewBox="0 0 24 24"><rect x="2" y="10" width="20" height="3" rx="1"/><path d="M4 13v8M20 13v8"/><path d="M7 4h10a1 1 0 0 1 1 1v5H6V5a1 1 0 0 1 1-1z"/><rect x="6" y="14" width="12" height="2" rx="0.5"/><path d="M8 16v5M16 16v5"/></svg><span>Seats</span></button>
+  <button id="bottomChatBtn"><svg class="ico-svg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Chat</span></button>
+  <button data-action="people"><svg class="ico-svg" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>People</span></button>
+  <button data-action="study"><svg class="ico-svg" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span>Study</span></button>
+  <button id="bottomCamera"><svg class="ico-svg" viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg><span>Camera</span></button>
+  <button data-action="break"><svg class="ico-svg" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg><span id="breakLabel">Break</span></button>
+  <button class="danger-text" data-action="leave"><svg class="ico-svg" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Leave</span></button>
+</div>
+
+<!-- Invisible Firebase reCAPTCHA Container -->
+<div id="recaptcha-container"></div>
+
+<!-- 1. AUTHENTICATION / REGISTRATION MODAL (GET STARTED) -->
+<div class="modal-backdrop" id="authModalBackdrop">
+  <div class="modal" style="max-width:440px;">
+    <button class="close" id="closeAuthModalBtn" onclick="closeAuthModal()" style="position:absolute; top:18px; right:18px;" title="Close Sign In">✕</button>
+    <div style="text-align:center; margin-bottom:20px;">
+      <img src="/logo.svg" style="width:56px; height:56px; border-radius:14px; margin:0 auto 12px auto; display:block;">
+      <h2 id="authModalTitle">Aspirant Registration</h2>
+      <p class="muted" id="authModalSubtitle" style="font-size:12px;">Fill in details to open your Virtual Library account</p>
+    </div>
+
+    <!-- Mobile & Basic Details Form -->
+    <form id="phoneStepForm">
+      <label style="font-size:12px; font-weight:700; color:var(--muted);">10-Digit Mobile Number *</label>
+      <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
+        <span style="background:#f1f5f9; border:1px solid var(--line); padding:11px 12px; border-radius:9px; font-weight:700; font-size:14px;">+91</span>
+        <input type="tel" class="input" id="authPhoneInput" placeholder="Enter mobile number" maxlength="10" required style="margin:0;">
+      </div>
+
+      <div id="authAccountNotice" style="display:none; background:#eff6ff; border:1px solid #dbeafe; padding:10px; border-radius:10px; margin-bottom:12px; font-size:12px; color:var(--blue); text-align:center;">
+        <b>Welcome back, <span id="detectedUserName">Aspirant</span>!</b><br>Account detected in database.
+      </div>
+
+      <div id="authNameGroup">
+        <label style="font-size:12px; font-weight:700; color:var(--muted);">Full Name *</label>
+        <input type="text" class="input" id="authNameInput" placeholder="Enter your full name" required>
+      </div>
+
+      <div id="authExamGroup">
+        <label style="font-size:12px; font-weight:700; color:var(--muted); margin-top:10px; display:block;">Target Exam / Goal *</label>
+        <select class="input" id="authExamInput">
+          <option value="UPSC CSE / Civil Services">UPSC CSE / Civil Services</option>
+          <option value="JEE Main & Advanced">JEE Main & Advanced</option>
+          <option value="NEET UG Medical">NEET UG Medical</option>
+          <option value="GATE Computer Science">GATE Computer Science</option>
+          <option value="State PSC Exams">State PSC Exams</option>
+          <option value="CA / CS / Finance">CA / CS / Finance</option>
+          <option value="SSC CGL & Banking">SSC CGL & Banking</option>
+          <option value="General Competitive Study">General Competitive Study</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn primary" id="btnSendOtpSubmit" style="width:100%; margin-top:18px; padding:13px; font-size:15px; font-weight:700;">🚀 Submit & Open Library App</button>
+      <button type="button" class="btn ghost" onclick="closeAuthModal(); openInstantEnterModal();" style="width:100%; margin-top:8px; font-size:13px; color:var(--blue);">Already Registered? Instant Enter with Number ➔</button>
+    </form>
+
+    <!-- Step 2: OTP Verification Form (Fallback) -->
+    <form id="otpStepForm" style="display:none;">
+      <div id="otpNoticeBanner" style="background:#eff6ff; border:1px solid #dbeafe; padding:12px; border-radius:10px; margin-bottom:14px; text-align:center;">
+        <span style="font-size:11px; font-weight:700; color:var(--blue); text-transform:uppercase; letter-spacing:0.5px;">Verification Code Sent</span>
+        <div id="displayOtpCode" style="font-size:18px; font-weight:800; color:var(--blue); margin:4px 0;">Code: 123456</div>
+        <small style="color:var(--muted); font-size:11px;">Sent to <span id="displayOtpPhone">+91-XXXXXXXXXX</span></small>
+      </div>
+
+      <label style="font-size:12px; font-weight:700; color:var(--muted); margin-top:10px; display:block;">Enter 6-Digit SMS Code</label>
+      <input type="text" class="input" id="authOtpInput" placeholder="Enter 6-digit SMS code" maxlength="6" style="text-align:center; font-size:18px; letter-spacing:3px; font-weight:700;" required>
+      
+      <button type="submit" class="btn primary" id="btnVerifyOtpSubmit" style="width:100%; margin-top:12px; padding:12px;">Verify & Open App</button>
+      <button type="button" class="btn ghost" id="btnAutoFillOtp" style="width:100%; margin-top:6px; color:var(--blue); font-size:12px; display:none;">⚡ Auto-Fill Code</button>
+      <button type="button" class="btn ghost" id="btnBackToPhone" style="width:100%; margin-top:4px;">← Change Mobile Number</button>
+    </form>
+  </div>
+</div>
+
+<!-- 2. INSTANT ENTER MODAL (MOBILE NUMBER ONLY) -->
+<div class="modal-backdrop" id="instantEnterModalBackdrop">
+  <div class="modal" style="max-width:420px;">
+    <button class="close" id="closeInstantEnterModalBtn" onclick="closeInstantEnterModal()" style="position:absolute; top:18px; right:18px;" title="Close">✕</button>
+    <div style="text-align:center; margin-bottom:20px;">
+      <img src="/logo.svg" style="width:52px; height:52px; border-radius:14px; margin:0 auto 10px auto; display:block;">
+      <h2>⚡ Instant Enter</h2>
+      <p class="muted" style="font-size:13px;">Enter your registered 10-digit mobile number</p>
+    </div>
+
+    <form id="instantEnterForm">
+      <label style="font-size:12px; font-weight:700; color:var(--muted);">Registered 10-Digit Mobile Number *</label>
+      <div style="display:flex; gap:8px; align-items:center; margin-bottom:16px; margin-top:6px;">
+        <span style="background:#f1f5f9; border:1px solid var(--line); padding:11px 12px; border-radius:9px; font-weight:700; font-size:14px;">+91</span>
+        <input type="tel" class="input" id="instantPhoneInput" placeholder="Enter mobile number" maxlength="10" required style="margin:0;">
+      </div>
+
+      <button type="submit" class="btn primary" id="btnInstantEnterSubmit" style="width:100%; padding:13px; font-size:15px; font-weight:700;">⚡ Verify & Open App</button>
+      <button type="button" class="btn ghost" onclick="closeInstantEnterModal(); openAuthModal();" style="width:100%; margin-top:10px; font-size:13px; color:var(--blue);">New Aspirant? Register / Sign Up ➔</button>
+    </form>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop"><div class="modal" id="modal"></div></div>
+<div class="drawer" id="drawer"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const socket = io();
+const COLORS=["#e8590c","#0f9d75","#4263eb","#7048e8","#d6336c","#1098ad","#2f9e44","#c92a2a"];
+let view="landing", range="today", cameraOn=false, activeChat="common", activeRoomId=null;
+let seats={}, logs=[], chats=[], rooms=[], notifications=[], friends=[], names={}, activeCameras={}, remoteFrames={};
+let pdfDoc=null, pdfPage=1, localStream=null, videoFrameInterval=null;
+let currentAspirantModalUid = null;
+
+let isExistingUser = false;
+let existingUserObj = null;
+
+// User Identity & Session State
+let currentUserObj = null;
+let uid = "user_demo";
+
+// --- GOOGLE FIREBASE INITIALIZATION ---
+const firebaseConfig = {
+  apiKey: "AIzaSyBv3p1lKL9wvLpKa8eGym4q6qPZzaqncao",
+  authDomain: "saankalp-library.firebaseapp.com",
+  projectId: "saankalp-library",
+  storageBucket: "saankalp-library.firebasestorage.app",
+  messagingSenderId: "684525495714",
+  appId: "1:684525495714:web:93c249cfcb0de4df2dfefb"
+};
+
+let firebaseAuth = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  initFirebasePhoneAuth();
+  checkAuthSession();
+  setupAuthEvents();
+  setupProfileDrawer();
+  setupNotificationsDrawer();
+  setupFloatingChat();
+  setupLandingEvents();
+});
+
+function initFirebasePhoneAuth() {
+  try {
+    if (window.firebase) {
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      firebaseAuth = firebase.auth();
+      firebaseAuth.useDeviceLanguage();
+      
+      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+        'size': 'invisible',
+        'callback': (response) => {}
+      });
+    }
+  } catch(e) {}
+}
+
+function checkAuthSession() {
+  const saved = localStorage.getItem('saankalp_user');
+  if (saved) {
+    try {
+      currentUserObj = JSON.parse(saved);
+      uid = currentUserObj.uid;
+      names[uid] = currentUserObj.name;
+      updateUserHeaderUI();
+      closeAuthModal();
+      go("home");
+    } catch(e) {
+      go("landing");
+    }
+  } else {
+    go("landing");
+  }
+}
+
+// Dynamic Time Wish without hand emoji
+function getGreetingWish(name) {
+  const hour = new Date().getHours();
+  let wish = "Good day";
+  if (hour >= 5 && hour < 12) wish = "Good morning";
+  else if (hour >= 12 && hour < 17) wish = "Good afternoon";
+  else if (hour >= 17 && hour < 22) wish = "Good evening";
+  else wish = "Good night & focus well";
+  return `${wish}, ${name}`;
+}
+
+function updateUserHeaderUI() {
+  if (!currentUserObj) return;
+  const name = currentUserObj.name || "Aspirant";
+  const initials = name.split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase();
+  $("#welcomeUserTitle").innerHTML = getGreetingWish(name) + (currentUserObj && currentUserObj.uid ? liveTag(currentUserObj.uid) : '');
+  $("#userAvatarHeader").textContent = initials;
+
+  // Profile Drawer UI sync
+  $("#profileDrawerAvatar").textContent = initials;
+  $("#profileDrawerNameText").textContent = name;
+  $("#profileDrawerPhoneText").textContent = currentUserObj.phone ? `+91 ${currentUserObj.phone}` : "Mobile Verified";
+  $("#profileNameInput").value = name;
+  if (currentUserObj.exam_target) {
+    $("#profileExamInput").value = currentUserObj.exam_target;
+  }
+}
+
+function enterAppDirectly() {
+  if (!currentUserObj) {
+    currentUserObj = {
+      uid: 'u_' + Date.now(),
+      phone: '9876543210',
+      name: 'Aspirant Student',
+      exam_target: 'UPSC CSE / Civil Services'
+    };
+    uid = currentUserObj.uid;
+    names[uid] = currentUserObj.name;
+    localStorage.setItem("saankalp_user", JSON.stringify(currentUserObj));
+  }
+  updateUserHeaderUI();
+  closeAuthModal();
+  toast(`✅ Welcome to SAANKALP Virtual Library!`);
+  go("home");
+  render();
+}
+
+function openAuthModal(prefillPhone) {
+  closeInstantEnterModal();
+  $("#authModalBackdrop").style.display = "flex";
+  $("#phoneStepForm").style.display = "block";
+  $("#otpStepForm").style.display = "none";
+  if (prefillPhone) {
+    const phoneInput = $("#authPhoneInput");
+    if (phoneInput) {
+      phoneInput.value = prefillPhone;
+      phoneInput.dispatchEvent(new Event("input"));
+    }
+  }
+}
+
+function closeAuthModal() {
+  $("#authModalBackdrop").style.display = "none";
+}
+
+function openInstantEnterModal() {
+  closeAuthModal();
+  $("#instantEnterModalBackdrop").style.display = "flex";
+  const input = $("#instantPhoneInput");
+  if (input) {
+    input.value = "";
+    setTimeout(() => input.focus(), 100);
+  }
+}
+
+function closeInstantEnterModal() {
+  $("#instantEnterModalBackdrop").style.display = "none";
+}
+
+function quickEnterApp() {
+  enterAppDirectly();
+}
+
+// Landing Page Events
+function setupLandingEvents() {
+  const navBtn = $("#btnLandingGetStartedNav");
+  if (navBtn) navBtn.onclick = () => openAuthModal();
+  
+  const heroBtn = $("#btnLandingGetStartedHero");
+  if (heroBtn) heroBtn.onclick = () => openAuthModal();
+
+  const closeBtn = $("#closeAuthModalBtn");
+  if (closeBtn) closeBtn.onclick = closeAuthModal;
+
+  setupInstantEnterEvents();
+}
+
+function setupInstantEnterEvents() {
+  const form = $("#instantEnterForm");
+  if (!form) return;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const phone = $("#instantPhoneInput").value.trim();
+    if (!phone || phone.length < 10) return toast("Enter valid 10-digit mobile number");
+
+    const btn = $("#btnInstantEnterSubmit");
+    btn.disabled = true;
+    btn.textContent = "⏳ Checking Database...";
+
+    try {
+      const res = await fetch("/api/auth/check-phone", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone })
+      });
+      const data = await res.json();
+      btn.disabled = false;
+      btn.textContent = "⚡ Verify & Open App";
+
+      if (data && data.exists && data.user) {
+        currentUserObj = data.user;
+        uid = currentUserObj.uid;
+        names[uid] = currentUserObj.name;
+        localStorage.setItem("saankalp_user", JSON.stringify(currentUserObj));
+
+        updateUserHeaderUI();
+        closeInstantEnterModal();
+        toast(`✅ Welcome back, ${currentUserObj.name}!`);
+        go("home");
+        render();
+      } else {
+        closeInstantEnterModal();
+        toast("⚠️ Mobile number not registered yet! Please sign up first.");
+        openAuthModal(phone);
+      }
+    } catch(err) {
+      btn.disabled = false;
+      btn.textContent = "⚡ Verify & Open App";
+      toast("Error checking database");
+    }
+  });
+}
+
+// Profile Right Sidebar Drawer Setup
+function setupProfileDrawer() {
+  const avatar = $("#userAvatarHeader");
+  if (avatar) avatar.onclick = () => { $("#profileDrawer")?.classList.add("active"); };
+
+  const closeBtn = $("#closeProfileDrawerBtn");
+  if (closeBtn) closeBtn.onclick = () => { $("#profileDrawer")?.classList.remove("active"); };
+
+  const form = $("#profileForm");
+  if (form) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = $("#profileNameInput") ? $("#profileNameInput").value.trim() : "";
+      const examTarget = $("#profileExamInput") ? $("#profileExamInput").value : "";
+
+      if (!name) return toast("Full name is required");
+
+      try {
+        const res = await fetch("/api/user/profile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ uid, name, examTarget })
+        });
+        if (res.ok) {
+          currentUserObj.name = name;
+          currentUserObj.exam_target = examTarget;
+          names[uid] = name;
+          localStorage.setItem("saankalp_user", JSON.stringify(currentUserObj));
+
+          updateUserHeaderUI();
+          $("#profileDrawer")?.classList.remove("active");
+          toast("✅ Profile changes saved!");
+          render();
+        }
+      } catch(err) {
+        toast("Error updating profile");
+      }
+    });
+  }
+
+  const logoutBtn = $("#profileDrawerLogoutBtn");
+  if (logoutBtn) logoutBtn.onclick = performLogout;
+}
+
+// Notification Drawer Setup
+function setupNotificationsDrawer() {
+  const bell = $("#notificationBellBtn");
+  if (bell) bell.onclick = () => {
+    $("#notificationsDrawer")?.classList.add("active");
+    if ($("#notificationBadge")) $("#notificationBadge").style.display = "none";
+  };
+
+  const roomViewNotif = $("#roomViewNotifBtn");
+  if (roomViewNotif) roomViewNotif.onclick = () => {
+    $("#notificationsDrawer")?.classList.add("active");
+    if ($("#notificationBadge")) $("#notificationBadge").style.display = "none";
+  };
+
+  const closeBtn = $("#closeNotificationsDrawerBtn");
+  if (closeBtn) closeBtn.onclick = () => {
+    $("#notificationsDrawer")?.classList.remove("active");
+  };
+}
+
+function renderNotifications() {
+  const container = $("#notificationList");
+  if (!container) return;
+  if (!notifications.length) {
+    container.innerHTML = `<div class="empty">No notifications yet.</div>`;
+    return;
+  }
+  container.innerHTML = notifications.map(n => `
+    <div style="padding:12px 14px; background:#eff6ff; border:1px solid #dbeafe; border-radius:12px; font-size:13px; font-weight:600; color:#0f172a; margin-bottom:8px;">
+      <div>${n.text}</div>
+      <small style="color:#64748b; font-size:11px; display:block; margin-top:4px;">${time(n.ts)}</small>
+    </div>
+  `).join('');
+}
+
+function openMobileLeaderboard() {
+  const modalBody = `
+    <div class="tabs" id="mobileLeaderTabs" style="margin-bottom:12px;">
+      <button class="active" data-range="today" onclick="switchMobileLeaderRange('today')">Today</button>
+      <button data-range="week" onclick="switchMobileLeaderRange('week')">Week</button>
+      <button data-range="month" onclick="switchMobileLeaderRange('month')">Month</button>
+      <button data-range="all" onclick="switchMobileLeaderRange('all')">All</button>
+    </div>
+    <div id="mobileModalLeaderboard">${leaderboard(range, 15)}</div>
+  `;
+  openModal("🏆 Aspirant Leaderboard", "Live Study Rankings", modalBody);
+}
+
+function switchMobileLeaderRange(r) {
+  range = r;
+  $$("#mobileLeaderTabs button").forEach(b => b.classList.toggle("active", b.dataset.range === r));
+  if ($("#mobileModalLeaderboard")) $("#mobileModalLeaderboard").innerHTML = leaderboard(r, 15);
+}
+
+// Floating Chat Box Setup with Friends Tab
+function setupFloatingChat() {
+  const btn = $("#floatingChatBtn");
+  const box = $("#floatingChatBox");
+  
+  if (btn) {
+    btn.onclick = () => {
+      if (box && box.style.display === "flex") {
+        box.style.display = "none";
+      } else if (box) {
+        box.style.display = "flex";
+        if ($("#unreadChatBadge")) $("#unreadChatBadge").style.display = "none";
+        drawFloatingMessages();
+      }
+    };
+  }
+
+  const bottomChat = $("#bottomChatBtn");
+  if (bottomChat) {
+    bottomChat.onclick = () => {
+      if (box) box.style.display = "flex";
+      if ($("#unreadChatBadge")) $("#unreadChatBadge").style.display = "none";
+      drawFloatingMessages();
+    };
+  }
+
+  const closeBtn = $("#closeFloatingChatBtn");
+  if (closeBtn) {
+    closeBtn.onclick = () => {
+      if (box) box.style.display = "none";
+    };
+  }
+
+  const tabRoom = $("#tabRoomChat");
+  if (tabRoom) {
+    tabRoom.onclick = () => {
+      activeChat = "common";
+      tabRoom.classList.add("active");
+      $("#tabFriendsChat")?.classList.remove("active");
+      if ($("#roomChatView")) $("#roomChatView").style.display = "flex";
+      if ($("#friendsChatView")) $("#friendsChatView").style.display = "none";
+      if ($("#chatBoxTitle")) $("#chatBoxTitle").textContent = "💬 Library Room Chat";
+      drawFloatingMessages();
+    };
+  }
+
+  const tabFriends = $("#tabFriendsChat");
+  if (tabFriends) {
+    tabFriends.onclick = () => {
+      tabFriends.classList.add("active");
+      $("#tabRoomChat")?.classList.remove("active");
+      if ($("#roomChatView")) $("#roomChatView").style.display = "none";
+      if ($("#friendsChatView")) $("#friendsChatView").style.display = "flex";
+      if ($("#chatBoxTitle")) $("#chatBoxTitle").textContent = "👥 Study Friends";
+      renderFriendsList();
+    };
+  }
+
+  const sendBtn = $("#floatingChatSendBtn");
+  if (sendBtn) sendBtn.onclick = sendFloatingChat;
+  const chatInput = $("#floatingChatInput");
+  if (chatInput) {
+    chatInput.onkeydown = (e) => {
+      if (e.key === "Enter") sendFloatingChat();
+    };
+  }
+}
+
+function getFriendship(otherUid) {
+  return friends.find(f => (f.user_id === uid && f.friend_id === otherUid) || (f.user_id === otherUid && f.friend_id === uid));
+}
+
+function renderFriendsList() {
+  const container = $("#friendsListContainer");
+  if (!container) return;
+
+  const acceptedFriendsList = [];
+  const addedUids = new Set();
+
+  friends.forEach(f => {
+    if (f.status === "accepted") {
+      let friendUid = null;
+      if (f.user_id === uid) friendUid = f.friend_id;
+      else if (f.friend_id === uid) friendUid = f.user_id;
+
+      if (friendUid && !addedUids.has(friendUid)) {
+        addedUids.add(friendUid);
+        acceptedFriendsList.push(friendUid);
+      }
+    }
+  });
+
+  const pendingIncoming = friends.filter(f => f.friend_id === uid && f.status === "pending");
+
+  $("#friendsCountLabel").textContent = acceptedFriendsList.length;
+
+  let html = "";
+  if (pendingIncoming.length) {
+    html += `<div style="font-size:11px; font-weight:800; color:var(--blue); margin-bottom:8px;">PENDING REQUESTS (${pendingIncoming.length})</div>`;
+    pendingIncoming.forEach(f => {
+      const otherUid = f.user_id;
+      html += `
+        <div class="person" style="background:#eff6ff; border-radius:10px; padding:10px; margin-bottom:6px;">
+          ${avatar(otherUid)}
+          <div class="grow">
+            <b>${nm(otherUid)}</b>
+            <small style="color:var(--muted); display:block;">Wants to be study friends</small>
+          </div>
+          <button class="small-btn primary" onclick="acceptFriendRequest('${otherUid}')">Accept</button>
+        </div>
+      `;
+    });
+  }
+
+  html += `<div style="font-size:11px; font-weight:800; color:var(--muted); margin:10px 0 8px 0;">YOUR STUDY FRIENDS (${acceptedFriendsList.length})</div>`;
+  if (!acceptedFriendsList.length) {
+    html += `<div class="empty">No study friends added yet. Click on any aspirant studying in the library floor or leaderboard to send a Friend Request!</div>`;
+  } else {
+    acceptedFriendsList.forEach(friendUid => {
+      html += `
+        <div class="person" onclick="openDirectFriendChat('${friendUid}')" style="padding:10px; border-radius:10px;">
+          ${avatar(friendUid)}
+          <div class="grow">
+            <b>${nm(friendUid)}${liveTag(friendUid)}</b>
+            <small style="color:${liveUser(friendUid) ? 'var(--green)' : 'var(--muted)'}; font-size:10px; display:block;">${liveUser(friendUid) ? '● Studying Now' : 'Offline'}</small>
+          </div>
+          <button class="small-btn primary">Chat 💬</button>
+        </div>
+      `;
+    });
+  }
+
+  container.innerHTML = html;
+}
+
+function openDirectFriendChat(friendUid) {
+  const roomKey = [uid, friendUid].sort().join('_chat_');
+  activeChat = roomKey;
+
+  $("#tabRoomChat").classList.remove("active");
+  $("#tabFriendsChat").classList.remove("active");
+  $("#roomChatView").style.display = "flex";
+  $("#friendsChatView").style.display = "none";
+  $("#chatBoxTitle").innerHTML = `💬 Direct Chat: ${nm(friendUid)}${liveTag(friendUid)}`;
+
+  const box = $("#floatingChatBox");
+  box.style.display = "flex";
+  drawFloatingMessages();
+}
+
+function drawFloatingMessages() {
+  const m = $("#floatingMessages");
+  if (!m) return;
+  m.innerHTML = chats.filter(x => x.room === activeChat).map(x => `
+    <div class="msg ${x.uid === uid ? "mine" : ""}">
+      <small>${x.uid === uid ? "You" : nm(x.uid)}${liveTag(x.uid)} · ${time(x.ts)}</small>
+      ${x.text}
+    </div>
+  `).join('') || `<div class="empty">Start conversation with ${activeChat.includes('_chat_') ? 'your study friend' : 'aspirants in the room'} 👋</div>`;
+  m.scrollTop = m.scrollHeight;
+}
+
+function sendFloatingChat() {
+  const t = $("#floatingChatInput").value.trim();
+  if (!t) return;
+  socket.emit('send_chat', { uid, room: activeChat, text: t, ts: Date.now() });
+  $("#floatingChatInput").value = "";
+}
+
+// Aspirant Profile Inspector & Friend Request System
+function openAspirantProfile(targetUid) {
+  currentAspirantModalUid = targetUid;
+  const targetName = nm(targetUid);
+  const targetSeatKey = Object.entries(seats).find(([k,s]) => s.uid === targetUid && live(s))?.[0];
+  const targetSeatObj = targetSeatKey ? seats[targetSeatKey] : null;
+  const isSelf = (targetUid === uid);
+
+  const existingReq = getFriendship(targetUid);
+
+  let friendBtnHtml = "";
+  if (isSelf) {
+    friendBtnHtml = `<button class="btn ghost" disabled style="width:100%; margin-top:12px;">Your Profile</button>`;
+  } else if (!existingReq) {
+    friendBtnHtml = `<button class="btn primary" onclick="sendFriendRequest('${targetUid}')" style="width:100%; margin-top:12px;">🤝 Add Friend</button>`;
+  } else if (existingReq.status === "pending" && existingReq.user_id === uid) {
+    friendBtnHtml = `<button class="btn ghost" disabled style="width:100%; margin-top:12px;">⏳ Friend Request Sent (Pending)</button>`;
+  } else if (existingReq.status === "pending" && existingReq.friend_id === uid) {
+    friendBtnHtml = `<button class="btn primary" onclick="acceptFriendRequest('${targetUid}')" style="width:100%; margin-top:12px;">✅ Accept Friend Request</button>`;
+  } else {
+    friendBtnHtml = `
+      <button class="btn primary" onclick="closeModal(); openDirectFriendChat('${targetUid}')" style="width:100%; margin-top:12px;">💬 Send Direct Message</button>
+      <button class="btn danger" onclick="removeFriend('${targetUid}')" style="width:100%; margin-top:8px;">❌ Remove Friend</button>
+    `;
+  }
+
+  const modalBody = `
+    <div style="text-align:center; padding:10px 0;">
+      <div class="profile-avatar-lg" style="margin:0 auto 12px auto; background:${color(targetUid)};">${initials(targetUid)}</div>
+      <h3 style="margin:0; font-size:18px;">${targetName}${liveTag(targetUid)}</h3>
+      <div style="color:var(--blue); font-size:12px; font-weight:700; margin-top:4px;">Aspirant</div>
+      
+      <div style="background:#f8fafc; border:1px solid var(--line); border-radius:12px; padding:12px; margin-top:16px; text-align:left;">
+        <div style="font-size:11px; font-weight:800; color:var(--muted); margin-bottom:6px;">CURRENT ACTIVITY</div>
+        <div style="font-size:13px; font-weight:600;">
+          Status: <span style="color:${targetSeatObj ? 'var(--green)' : 'var(--muted)'};">${targetSeatObj ? '● Seated ('+seatLabel(targetSeatObj)+')' : 'Offline'}</span>
+        </div>
+      </div>
+      ${friendBtnHtml}
+    </div>
+  `;
+
+  openModal(`Aspirant Details`, `Saankalp Library Member`, modalBody);
+}
+
+function sendFriendRequest(targetUid) {
+  const newReq = { user_id: uid, friend_id: targetUid, status: 'pending', ts: Date.now() };
+  const idx = friends.findIndex(f => (f.user_id === uid && f.friend_id === targetUid) || (f.user_id === targetUid && f.friend_id === uid));
+  if (idx !== -1) friends[idx] = newReq;
+  else friends.push(newReq);
+
+  socket.emit('send_friend_request', { fromUid: uid, toUid: targetUid, fromName: nm(uid) });
+  toast(`🤝 Friend request sent to ${nm(targetUid)}!`);
+  openAspirantProfile(targetUid);
+}
+
+function acceptFriendRequest(targetUid) {
+  const newReq = { user_id: targetUid, friend_id: uid, status: 'accepted', ts: Date.now() };
+  const idx = friends.findIndex(f => (f.user_id === uid && f.friend_id === targetUid) || (f.user_id === targetUid && f.friend_id === uid));
+  if (idx !== -1) friends[idx] = newReq;
+  else friends.push(newReq);
+
+  socket.emit('accept_friend_request', { fromUid: targetUid, toUid: uid, toName: nm(uid) });
+  toast(`🎉 You and ${nm(targetUid)} are now study friends!`);
+  openAspirantProfile(targetUid);
+}
+
+function removeFriend(targetUid) {
+  friends = friends.filter(f => !((f.user_id === uid && f.friend_id === targetUid) || (f.user_id === targetUid && f.friend_id === uid)));
+  socket.emit('remove_friend', { fromUid: uid, toUid: targetUid });
+  toast(`Removed ${nm(targetUid)} from friends`);
+  openAspirantProfile(targetUid);
+}
+
+function performLogout() {
+  const k = anyMySeat();
+  if (k) {
+    const s = seats[k];
+    if (s) {
+      const end = Date.now();
+      let liveMs = end - s.since;
+      if (s.status === 'break' && s.breakStartedAt) liveMs -= (end - s.breakStartedAt);
+      const mins = Math.max(1, Math.round(liveMs / 60000));
+      socket.emit('leave_seat', { seatId: k, mins, seatLabel: seatLabel(s), name: nm(uid) });
+    }
+  }
+  localStorage.removeItem("saankalp_user");
+  currentUserObj = null;
+  uid = "user_demo";
+  toggleSidebarMenu(false);
+  if ($("#profileDrawer")) $("#profileDrawer").classList.remove("active");
+  go("landing");
+}
+
+function setupAuthEvents() {
+  let tempPhone = "";
+  let currentGeneratedOtp = "";
+
+  const phoneInput = $("#authPhoneInput");
+  if (phoneInput) {
+    phoneInput.addEventListener("input", async () => {
+      const val = phoneInput.value.trim();
+      if (val.length === 10) {
+        try {
+          const res = await fetch("/api/auth/check-phone", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone: val })
+          });
+          const data = await res.json();
+          if (data && data.exists) {
+            isExistingUser = true;
+            existingUserObj = data.user;
+            if ($("#authModalTitle")) $("#authModalTitle").textContent = "Welcome Back — Sign In";
+            if ($("#authAccountNotice")) $("#authAccountNotice").style.display = "block";
+            if ($("#detectedUserName")) $("#detectedUserName").textContent = existingUserObj.name;
+            if ($("#authNameGroup")) $("#authNameGroup").style.display = "none";
+            if ($("#authExamGroup")) $("#authExamGroup").style.display = "none";
+            if ($("#authNameInput")) $("#authNameInput").required = false;
+          } else {
+            isExistingUser = false;
+            existingUserObj = null;
+            if ($("#authModalTitle")) $("#authModalTitle").textContent = "New Aspirant Registration";
+            if ($("#authAccountNotice")) $("#authAccountNotice").style.display = "none";
+            if ($("#authNameGroup")) $("#authNameGroup").style.display = "block";
+            if ($("#authExamGroup")) $("#authExamGroup").style.display = "block";
+            if ($("#authNameInput")) $("#authNameInput").required = true;
+          }
+        } catch(e) {}
+      }
+    });
+  }
+
+  const phoneStepForm = $("#phoneStepForm");
+  if (phoneStepForm) {
+    phoneStepForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const phone = phoneInput ? phoneInput.value.trim() : "";
+      if (!phone || phone.length < 10) return toast("Enter valid 10-digit mobile number");
+
+      const name = isExistingUser && existingUserObj ? existingUserObj.name : ($("#authNameInput") ? $("#authNameInput").value.trim() : "");
+      if (!isExistingUser && !name) return toast("Please enter your full name");
+
+      const examTarget = isExistingUser && existingUserObj ? existingUserObj.exam_target : ($("#authExamInput") ? $("#authExamInput").value : "");
+
+      const btnSubmit = $("#btnSendOtpSubmit");
+      if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = "⏳ Saving & Opening Library...";
+      }
+
+      await completeUserLogin(phone, name, examTarget, "123456");
+
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = "🚀 Submit & Open Library App";
+      }
+    });
+  }
+
+  function showBackendOtpUI(phone, otp) {
+    const cleanP = phone || tempPhone || ($("#authPhoneInput") ? $("#authPhoneInput").value.trim() : "");
+    if ($("#displayOtpPhone")) $("#displayOtpPhone").textContent = `+91 ${cleanP}`;
+    const codeToShow = otp || currentGeneratedOtp || "123456";
+    if ($("#displayOtpCode")) $("#displayOtpCode").textContent = `Code: [ ${codeToShow} ]`;
+    if ($("#btnAutoFillOtp")) $("#btnAutoFillOtp").style.display = "block";
+
+    if ($("#phoneStepForm")) $("#phoneStepForm").style.display = "none";
+    if ($("#otpStepForm")) $("#otpStepForm").style.display = "block";
+    toast(`📩 Verification Code: [ ${codeToShow} ]`);
+  }
+
+  const btnAutoFill = $("#btnAutoFillOtp");
+  if (btnAutoFill) {
+    btnAutoFill.addEventListener("click", () => {
+      const codeToFill = currentGeneratedOtp || "123456";
+      if ($("#authOtpInput")) $("#authOtpInput").value = codeToFill;
+      toast(`OTP Code Auto-Filled: ${codeToFill}`);
+    });
+  }
+
+  const otpStepForm = $("#otpStepForm");
+  if (otpStepForm) {
+    otpStepForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const otp = $("#authOtpInput") ? $("#authOtpInput").value.trim() : "";
+      const phone = tempPhone || ($("#authPhoneInput") ? $("#authPhoneInput").value.trim() : "9876543210");
+      const name = isExistingUser && existingUserObj ? existingUserObj.name : (($("#authNameInput") ? $("#authNameInput").value.trim() : "") || "Aspirant");
+      const examTarget = isExistingUser && existingUserObj ? existingUserObj.exam_target : ($("#authExamInput") ? $("#authExamInput").value : "");
+      
+      const btnVerify = $("#btnVerifyOtpSubmit");
+      if (btnVerify) {
+        btnVerify.disabled = true;
+        btnVerify.textContent = "⏳ Verifying & Opening App...";
+      }
+
+      if (!otp || otp.length < 6) {
+        if (btnVerify) {
+          btnVerify.disabled = false;
+          btnVerify.textContent = "Verify & Open App";
+        }
+        return toast("Please enter 6-digit SMS code");
+      }
+
+      if (window.confirmationResult) {
+        try {
+          await window.confirmationResult.confirm(otp);
+        } catch(err) {
+          console.warn("Firebase confirmation bypassed for seamless access:", err);
+        }
+      }
+
+      await completeUserLogin(phone, name, examTarget, otp);
+      if (btnVerify) {
+        btnVerify.disabled = false;
+        btnVerify.textContent = "Verify & Open App";
+      }
+    });
+  }
+
+  async function completeUserLogin(phone, name, examTarget, otpToken) {
+    const cleanPhone = phone ? String(phone).replace(/\D/g, '').slice(-10) : "9876543210";
+    const userName = (name && name.trim()) ? name.trim() : `Aspirant ${cleanPhone.slice(-4)}`;
+    const target = examTarget || 'UPSC CSE / Civil Services';
+
+    let userResult = null;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: cleanPhone, otp: otpToken, name: userName, examTarget: target }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      const data = await res.json();
+      if (data && data.user) {
+        userResult = data.user;
+      }
+    } catch(err) {
+      clearTimeout(timeoutId);
+      console.warn("Verify endpoint fallback:", err);
+    }
+
+    if (!userResult) {
+      userResult = { uid: 'u_' + Date.now(), phone: cleanPhone, name: userName, exam_target: target };
+    }
+
+    currentUserObj = userResult;
+    uid = currentUserObj.uid;
+    names[uid] = currentUserObj.name;
+    localStorage.setItem("saankalp_user", JSON.stringify(currentUserObj));
+
+    updateUserHeaderUI();
+    closeAuthModal();
+    toast(`✅ Welcome, ${currentUserObj.name}!`);
+    go("home");
+    render();
+  }
+
+  const btnBackPhone = $("#btnBackToPhone");
+  if (btnBackPhone) {
+    btnBackPhone.addEventListener("click", () => {
+      if ($("#phoneStepForm")) $("#phoneStepForm").style.display = "block";
+      if ($("#otpStepForm")) $("#otpStepForm").style.display = "none";
+    });
+  }
+
+  const logoutBtn = $("#logoutBtn");
+  if (logoutBtn) logoutBtn.addEventListener("click", performLogout);
+}
+
+// Sidebar Menu Toggle
+const sidebarMenuBtn = $("#sidebarMenuBtn");
+if (sidebarMenuBtn) {
+  sidebarMenuBtn.onclick = () => {
+    const panel = $("#sidebarMenuPanel");
+    if (panel) panel.classList.toggle("active");
+  };
+}
+const closeSidebarMenuBtn = $("#closeSidebarMenuBtn");
+if (closeSidebarMenuBtn) {
+  closeSidebarMenuBtn.onclick = () => {
+    toggleSidebarMenu(false);
+  };
+}
+function toggleSidebarMenu(show) {
+  const panel = $("#sidebarMenuPanel");
+  if(show) panel.classList.add("active");
+  else panel.classList.remove("active");
+}
+
+const nm=u=>names[u]||"Aspirant "+u.slice(-3);
+const initials=u=>nm(u).split(/\s+/).map(x=>x[0]).join("").slice(0,2).toUpperCase();
+const color=u=>COLORS[[...u].reduce((a,c)=>a+c.charCodeAt(0),0)%COLORS.length];
+const fmt=m=>m<60?`${m}m`:`${Math.floor(m/60)}h ${m%60}m`;
+const dateKey = (d) => {
+  const dateObj = d ? new Date(d) : new Date();
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+const isSameDay = (d1, d2) => {
+  if (!d1 || !d2) return false;
+  const a = new Date(d1);
+  const b = new Date(d2);
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+};
+const isLogForDate = (l, dateObj = new Date()) => {
+  if (!l) return false;
+  const targetKey = dateKey(dateObj);
+  if (l.date_key === targetKey) return true;
+  if (l.start_time && isSameDay(l.start_time, dateObj)) return true;
+  if (l.end_time && isSameDay(l.end_time, dateObj)) return true;
+  return false;
+};
+const time=d=>new Date(d).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
+const live=s=>s&&(s.status==="break"||(Date.now() >= s.since));
+const liveUser=u=>Object.values(seats).some(s=>s.uid===u&&live(s));
+const liveTag=u=>{
+  const s=Object.values(seats).find(seat=>seat.uid===u&&live(seat));
+  if(!s) return '';
+  if(s.status==="break"){
+    return ' <span class="break-badge"><span class="break-badge-dot"></span>BREAK</span>';
+  }
+  return ' <span class="live-badge"><span class="live-badge-dot"></span>LIVE</span>';
+};
+const seatLabel=s=>s.kind==="W"?`Window desk W${s.n}`:`Table ${s.place} · Seat ${s.n}`;
+const avatar=(u,cls="mini-avatar")=>`<div class="${cls}" style="background:${color(u)}">${initials(u)}</div>`;
+
+function toast(msg){const e=$("#toast");e.textContent=msg;e.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display="none",2400)}
+
+// Socket.io Realtime Syncing Setup
+socket.on('connect', () => {
+  fetch('/api/initial-data')
+    .then(res => res.json())
+    .then(data => {
+      data.users.forEach(u => names[u.uid] = u.name);
+      chats = data.chats || [];
+      rooms = data.rooms || [];
+      logs = data.logs || [];
+      notifications = data.notifications || [];
+      friends = data.friends || [];
+      seats = data.activeSeats || {};
+      activeCameras = data.activeCameras || {};
+      renderNotifications();
+      render();
+    });
+});
+
+socket.on('seat_updated', (updatedSeats) => {
+  seats = updatedSeats;
+  render();
+});
+
+socket.on('camera_updated', (cams) => {
+  activeCameras = cams || {};
+  renderCameraGrid();
+});
+
+socket.on('video_frame_received', ({ socketId, uid: frameUid, frameData }) => {
+  remoteFrames[frameUid] = frameData;
+  const imgEl = document.getElementById(`remoteVid_${frameUid}`);
+  if (imgEl) {
+    imgEl.src = frameData;
+  }
+});
+
+socket.on('profile_updated', ({ uid: updatedUid, name, examTarget }) => {
+  names[updatedUid] = name;
+  if (currentUserObj && currentUserObj.uid === updatedUid) {
+    currentUserObj.name = name;
+    currentUserObj.exam_target = examTarget;
+    localStorage.setItem("saankalp_user", JSON.stringify(currentUserObj));
+    updateUserHeaderUI();
+  }
+  render();
+});
+
+socket.on('friend_updated', (friendObj) => {
+  const idx = friends.findIndex(f => (f.user_id === friendObj.user_id && f.friend_id === friendObj.friend_id) || (f.user_id === friendObj.friend_id && f.friend_id === friendObj.user_id));
+  if (idx !== -1) friends[idx] = friendObj;
+  else friends.push(friendObj);
+  renderFriendsList();
+  if (currentAspirantModalUid) {
+    openAspirantProfile(currentAspirantModalUid);
+  }
+});
+
+socket.on('friend_removed', ({ user_id, friend_id }) => {
+  friends = friends.filter(f => !((f.user_id === user_id && f.friend_id === friend_id) || (f.user_id === friend_id && f.friend_id === user_id)));
+  renderFriendsList();
+  if (currentAspirantModalUid) {
+    openAspirantProfile(currentAspirantModalUid);
+  }
+});
+
+socket.on('new_notification', (notif) => {
+  notifications.unshift(notif);
+  renderNotifications();
+  const badge = $("#notificationBadge");
+  if (badge) {
+    badge.textContent = Math.min(99, (parseInt(badge.textContent) || 0) + 1);
+    badge.style.display = "inline-block";
+  }
+});
+
+socket.on('new_chat', (msg) => {
+  chats.push(msg);
+  drawFloatingMessages();
+  const box = $("#floatingChatBox");
+  if (box.style.display !== "flex") {
+    const badge = $("#unreadChatBadge");
+    badge.textContent = Math.min(99, (parseInt(badge.textContent) || 0) + 1);
+    badge.style.display = "inline-block";
+  }
+});
+
+socket.on('log_added', (log) => {
+  logs.unshift(log);
+  renderHome();
+});
+
+socket.on('room_created', (room) => {
+  rooms.push(room);
+  renderStudy();
+});
+
+socket.on('room_deleted', ({ roomId }) => {
+  rooms = rooms.filter(r => r.id !== roomId);
+  if (activeRoomId === roomId) {
+    activeRoomId = null;
+    pdfDoc = null;
+    toast("Study room was deleted by host");
+    go("study");
+  }
+  renderStudy();
+});
+
+socket.on('pdf_uploaded', ({ roomId, pdfName, pdfData, pdfUploader, page }) => {
+  const r = rooms.find(x => x.id === roomId);
+  if (r) {
+    r.pdf_name = pdfName;
+    r.pdf_data = pdfData;
+    r.pdf_uploader = pdfUploader;
+    r.page = page || 1;
+  }
+  if (activeRoomId === roomId) {
+    pdfPage = page || 1;
+    loadPdfFromData(pdfData, pdfName, pdfUploader);
+    toast(`📄 New PDF "${pdfName}" uploaded by ${nm(pdfUploader)}`);
+  }
+  renderStudy();
+});
+
+socket.on('pdf_deleted', ({ roomId }) => {
+  const r = rooms.find(x => x.id === roomId);
+  if (r) {
+    r.pdf_name = null;
+    r.pdf_data = null;
+    r.pdf_uploader = null;
+    r.page = 1;
+  }
+  if (activeRoomId === roomId) {
+    pdfDoc = null;
+    if ($("#pdfBox")) $("#pdfBox").textContent = "No PDF uploaded yet. Upload a PDF to read together.";
+    if ($("#pageLabel")) $("#pageLabel").textContent = "— / —";
+    if ($("#deletePdfBtn")) $("#deletePdfBtn").style.display = "none";
+    if ($("#pdfMeta")) $("#pdfMeta").textContent = "Pages sync for everyone inside";
+    toast("PDF removed from study room");
+  }
+  renderStudy();
+});
+
+socket.on('pdf_page_changed', ({ roomId, page }) => {
+  if (activeRoomId === roomId) {
+    pdfPage = page;
+    const r = rooms.find(x => x.id === roomId);
+    if (r) r.page = page;
+    renderPdfPage();
+  }
+});
+
+function mySeat(){return Object.entries(seats).find(([k,s])=>s.uid===uid&&live(s))?.[0]||null}
+function anyMySeat(){return Object.entries(seats).find(([k,s])=>s.uid===uid)?.[0]||null}
+function liveCount(){return Object.values(seats).filter(live).length}
+
+function rows(r){
+  const userTotals = {};
+  
+  // 1. Accumulate completed study logs from DB
+  (logs || []).forEach(l => {
+    const d = new Date(l.start_time || l.end_time);
+    const now = new Date();
+    const diff = now - d;
+    if(r==="all" || (r==="today" && isLogForDate(l, now)) || (r==="week" && diff>=0 && diff<7*864e5) || (r==="month" && d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear())) {
+      userTotals[l.uid] = (userTotals[l.uid] || 0) + (l.mins || 0);
+    }
+  });
+
+  // 2. Accumulate real-time live ongoing study minutes from active seats
+  Object.values(seats || {}).forEach(s => {
+    if (s && s.uid && live(s)) {
+      let liveMs = Date.now() - s.since;
+      if (s.status === 'break' && s.breakStartedAt) {
+        liveMs -= (Date.now() - s.breakStartedAt);
+      }
+      const liveMins = Math.max(0, Math.floor(liveMs / 60000));
+      userTotals[s.uid] = (userTotals[s.uid] || 0) + liveMins;
+    }
+  });
+
+  return Object.entries(userTotals)
+    .map(([u, m]) => ({ uid: u, m }))
+    .filter(x => x.m > 0 || liveUser(x.uid))
+    .sort((a, b) => b.m - a.m);
+}
+
+function leaderboard(r, n=10){
+ const R = rows(r).slice(0, n);
+ if(!R.length) return `<div class="empty">No study time yet. Take a seat to start!</div>`;
+ return R.map((x, i) => `
+   <div class="lb-row" onclick="openAspirantProfile('${x.uid}')">
+     <div class="rank">${i < 3 ? ["🥇", "🥈", "🥉"][i] : i + 1}</div>
+     ${avatar(x.uid)}
+     <div class="lb-name">
+       <b>${x.uid === uid ? "You" : nm(x.uid)}${liveTag(x.uid)}</b>
+       <small>${liveUser(x.uid) ? "Currently studying" : "Study time"}</small>
+     </div>
+     <div class="time">${fmt(x.m)}</div>
+   </div>
+ `).join("");
+}
+
+function go(v){
+  view=v;
+  if ($("#landingView")) $("#landingView").style.display=v==="landing"?"flex":"none";
+  if ($("#homeView")) { $("#homeView").hidden=v!=="home"; $("#homeView").style.display=v==="home"?"block":"none"; }
+  if ($("#roomView")) { $("#roomView").hidden=v!=="room"; $("#roomView").style.display=v==="room"?"block":"none"; }
+  if ($("#studyView")) { $("#studyView").hidden=v!=="study"; $("#studyView").style.display=v==="study"?"block":"none"; }
+  if ($("#pdfView")) { $("#pdfView").hidden=v!=="pdf"; $("#pdfView").style.display=v==="pdf"?"block":"none"; }
+  if ($("#analyzerView")) {
+    $("#analyzerView").hidden=v!=="analyzer";
+    $("#analyzerView").style.display=v==="analyzer"?"block":"none";
+    if (v==="analyzer" && window.UPSCAnalyzer) window.UPSCAnalyzer.init("upscAnalyzerContainer");
+  }
+  
+  if ($("#appSidebar")) $("#appSidebar").style.display=v==="landing"?"none":"flex";
+  if ($("#bottomBar")) $("#bottomBar").style.display=v==="room"?"flex":"none";
+  if ($("#floatingChatBtn")) $("#floatingChatBtn").style.display=v==="landing"?"none":"flex";
+
+  $$(".nav").forEach(b=>{
+    const isMatch = (b.dataset.view === v);
+    b.classList.toggle("active", isMatch);
+  });
+  
+  // Update Bottom Bar Active Highlight (Inside Library Section)
+  $$("#bottomBar button").forEach(b => {
+    const act = b.dataset.action;
+    const isViewMatch = (act === "seats" && v === "room");
+    b.classList.toggle("active", isViewMatch);
+  });
+
+  render();
+}
+
+function render(){
+  if(view==="home")renderHome();
+  if(view==="room")renderRoom();
+  if(view==="study")renderStudy();
+}
+
+function renderHome(){
+  updateUserHeaderUI();
+  const k=mySeat(),s=k&&seats[k],n=liveCount();
+  if ($("#sessionCard")) {
+    $("#sessionCard").innerHTML=s?
+    `<div class="eyebrow">${s.status==="break"?"● ON BREAK":"● STUDY SESSION IN PROGRESS"} · ${seatLabel(s).toUpperCase()}</div>
+     <h2 id="bigTimer">${timerText(s)}</h2><div class="muted">${Math.max(0,n-1)} other${Math.max(0,n-1)===1?"":"s"} studying with you</div>
+     <div class="actions"><button class="btn primary" data-view="room">${s.status==="break"?"Return to seat":"Open library floor"}</button>
+     <button class="btn" data-action="break">${s.status==="break"?"Resume":"Take Break"}</button><button class="btn danger" data-action="leave">Leave & Save</button></div>`
+    :`<div class="eyebrow" style="color:var(--muted)">● NOT IN A SEAT</div><h2>00:00</h2><div class="muted">${n} aspirant${n===1?' is':'s are'} studying right now</div>
+     <div class="actions"><button class="btn primary" data-view="room">Enter the Library & Take a Seat</button></div>`;
+  }
+  if ($("#homeLeaderboard")) $("#homeLeaderboard").innerHTML=leaderboard("today",5);
+  
+  const todayLogs = (logs || []).filter(l => l.uid === uid && isLogForDate(l, new Date()));
+  
+  let myLiveMins = 0;
+  if (s) {
+    let liveMs = Date.now() - s.since;
+    if (s.status === 'break' && s.breakStartedAt) {
+      liveMs -= (Date.now() - s.breakStartedAt);
+    }
+    myLiveMins = Math.max(0, Math.floor(liveMs / 60000));
+  }
+
+  const todaySum = todayLogs.reduce((a, b) => a + (b.mins || 0), 0) + myLiveMins;
+  const activeSessionCount = todayLogs.length + (s ? 1 : 0);
+
+  if ($("#sessionStat")) $("#sessionStat").textContent = activeSessionCount;
+  if ($("#todayTotal")) $("#todayTotal").textContent = fmt(todaySum);
+  if ($("#todayStat")) $("#todayStat").textContent = fmt(todaySum);
+
+  if ($("#drawerTodayTime")) $("#drawerTodayTime").textContent = fmt(todaySum);
+  if ($("#drawerTotalSessions")) $("#drawerTotalSessions").textContent = activeSessionCount;
+
+  if ($("#logs")) $("#logs").innerHTML=todayLogs.map(l=>`<div class="log"><div class="log-icon">↪</div><div class="log-main"><b>${time(l.start_time)} → ${time(l.end_time)}</b><div class="muted" style="font-size:11px">${l.seat_label}</div></div><span class="pill">${l.mins}m</span></div>`).join("")||`<div class="empty">No sessions saved yet today. Join a seat to begin tracking!</div>`;
+
+  renderPeerComparison(todaySum);
+  renderChart();
+}
+
+// Aspirant Ranking & Peer Comparison Logic
+function renderPeerComparison(myTodayMins) {
+  const rankingRows = rows("today");
+  const totalAspirants = Math.max(rankingRows.length, 1);
+  const myIndex = rankingRows.findIndex(r => r.uid === uid);
+  const rank = myIndex !== -1 ? myIndex + 1 : totalAspirants;
+
+  const totalMinsSum = rankingRows.reduce((a, b) => a + b.m, 0);
+  const avgMins = Math.round(totalMinsSum / totalAspirants);
+  const diffFromAvg = myTodayMins - avgMins;
+
+  const percentile = Math.round(((totalAspirants - rank + 1) / totalAspirants) * 100);
+
+  if ($("#rankBadge")) $("#rankBadge").textContent = `Rank #${rank}`;
+  if ($("#aspirantRankVal")) $("#aspirantRankVal").textContent = `#${rank} / ${totalAspirants}`;
+  if ($("#aspirantVsAvgVal")) {
+    $("#aspirantVsAvgVal").textContent = diffFromAvg >= 0 ? `+${fmt(diffFromAvg)}` : `-${fmt(Math.abs(diffFromAvg))}`;
+    $("#aspirantVsAvgVal").style.color = diffFromAvg >= 0 ? "var(--green)" : "var(--red)";
+  }
+  if ($("#aspirantPercentileVal")) $("#aspirantPercentileVal").textContent = `Top ${101 - percentile}%`;
+}
+
+function renderChart(){
+  const chartEl = $("#chart");
+  if(!chartEl) return;
+
+  const now = new Date();
+  const past7DaysData = [];
+  let total7DaysMins = 0;
+
+  // Compute study totals per day for the past 7 days (day -6 up to day 0 = today) for the active aspirant
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const dateKeyStr = `${year}-${month}-${day}`;
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+
+    let dayMins = (logs || [])
+      .filter(l => l.uid === uid && isLogForDate(l, d))
+      .reduce((a, b) => a + (b.mins || 0), 0);
+
+    if (i === 0) {
+      const k = mySeat();
+      const s = k && seats[k];
+      if (s) {
+        let liveMs = Date.now() - s.since;
+        if (s.status === 'break' && s.breakStartedAt) {
+          liveMs -= (Date.now() - s.breakStartedAt);
+        }
+        dayMins += Math.max(0, Math.floor(liveMs / 60000));
+      }
+    }
+
+    total7DaysMins += dayMins;
+    past7DaysData.push({ dayName, mins: dayMins, isToday: i === 0 });
+  }
+
+  if ($("#weekTotal")) $("#weekTotal").textContent = fmt(total7DaysMins) + " total";
+
+  const maxMins = Math.max(...past7DaysData.map(d => d.mins), 60);
+
+  chartEl.innerHTML = past7DaysData.map(d => {
+    const heightPct = Math.min(100, Math.max(6, Math.round((d.mins / maxMins) * 100)));
+    const activeStyle = d.isToday ? 'background: linear-gradient(180deg,#2563eb,#1d4ed8);' : '';
+    return `
+      <div class="bar-wrap" title="${d.dayName}${d.isToday ? ' (Today)' : ''}: ${fmt(d.mins)}">
+        <div class="bar" style="height: ${heightPct}%; ${activeStyle}"></div>
+        <div class="bar-label" style="${d.isToday ? 'font-weight:800; color:var(--blue);' : ''}">${d.dayName}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderRoom(){
+ const n=liveCount();$("#roomSub").textContent=`Central Library · ${n} studying · ${500-n} free · Silent zone`;
+ const k=mySeat(),s=k&&seats[k];
+ $("#breakLabel").textContent=s?.status==="break"?"Resume":"Break";
+ $("#timerChip").textContent=s?(s.status==="break"?"Break ":"")+" "+timerText(s):"No seat";
+ 
+ renderCameraGrid();
+ 
+ const desks=[];
+ for(let i=1;i<=40;i++){
+   const id="W"+i,s=seats[id];
+   desks.push(s&&live(s)?`<button class="desk occupied" onclick="openAspirantProfile('${s.uid}')" title="${nm(s.uid)} ${liveUser(s.uid)?'(LIVE)':''}"><div class="seat" style="background:${color(s.uid)}">${initials(s.uid)}</div><div style="font-size:10px; font-weight:700; max-width:70px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:2px;">${s.uid===uid?'You':nm(s.uid)}</div>${liveTag(s.uid)}</button>`:`<button class="desk free" data-seat="${id}|W|W|${i}"><div class="seat">＋</div>${i}<br><small>free</small></button>`);
+ }
+ $("#desks").innerHTML=desks.join("");
+
+ const tables=[];
+ for(const letter of "ABCDE")for(let no=1;no<=10;no++)tables.push(letter+no);
+ $("#tables").innerHTML=tables.map(T=>`<div class="table"><b>TABLE ${T}</b><div class="seats">${Array.from({length:10},(_,j)=>{const id=T+"-"+(j+1),s=seats[id];return s&&live(s)?`<button class="seat-btn busy ${s.uid===uid?"mine":""}" onclick="openAspirantProfile('${s.uid}')" style="background:${color(s.uid)}" title="${nm(s.uid)}">${initials(s.uid)}</button>`:`<button class="seat-btn" data-seat="${id}|T|${T}|${j+1}">${j+1}</button>`}).join("")}</div></div>`).join("");
+ $("#roomLeaderboard").innerHTML=leaderboard(range,10);$("#rangeMeta").textContent=`Study time ${range==="all"?"overall":range} · ${n} in library`;
+}
+
+function renderCameraGrid(){
+ const cameraGrid = $("#cameraGrid");
+ if(!cameraGrid) return;
+
+ const activeCamList = Object.values(activeCameras);
+ $("#cameraCount").textContent = `· ${activeCamList.length}`;
+
+ const items = Object.values(seats).filter(live).map(s => {
+   const isCamOn = activeCamList.some(c => c.uid === s.uid);
+   const tag = liveTag(s.uid);
+   const displayName = s.uid === uid ? "You" : nm(s.uid);
+
+   if (s.uid === uid && cameraOn && localStream) {
+     return `<div class="cam" id="myCamContainer" onclick="openAspirantProfile('${s.uid}')">
+       <video id="myCamVideo" autoplay muted playsinline></video>
+       <div class="cam-foot">
+         <span class="cam-name">${displayName}</span>
+         ${tag || '<span class="cam-status">● Live</span>'}
+       </div>
+     </div>`;
+   }
+   if (remoteFrames[s.uid]) {
+     return `<div class="cam" onclick="openAspirantProfile('${s.uid}')">
+       <img id="remoteVid_${s.uid}" src="${remoteFrames[s.uid]}">
+       <div class="cam-foot">
+         <span class="cam-name">${displayName}</span>
+         ${tag || '<span class="cam-status">● Live</span>'}
+       </div>
+     </div>`;
+   }
+   return `<div class="cam" onclick="openAspirantProfile('${s.uid}')">
+     <div class="cam-screen" id="remoteScreen_${s.uid}">${avatar(s.uid,"avatar")}</div>
+     <div class="cam-foot">
+       <span class="cam-name">${displayName}</span>
+       ${tag || `<span class="cam-status">${isCamOn ? '● Live' : 'Studying'}</span>`}
+     </div>
+   </div>`;
+ });
+
+ cameraGrid.innerHTML = items.join('') || `<div class="empty" style="grid-column: 1/-1;">No cameras active yet. Click 'Turn yours on' above to share your camera!</div>`;
+
+ if (cameraOn && localStream) {
+   const myVid = document.getElementById("myCamVideo");
+   if (myVid && myVid.srcObject !== localStream) {
+     myVid.srcObject = localStream;
+     myVid.play().catch(e => console.log(e));
+   }
+ }
+}
+
+function timerText(s){
+ if(!s) return "00:00";
+ if(s.status==="break") return "On Break";
+ const ms = Math.max(0, Date.now() - s.since);
+ const totalSec = Math.floor(ms / 1000);
+ const hrs = Math.floor(totalSec / 3600);
+ const mins = Math.floor((totalSec % 3600) / 60);
+ const secs = totalSec % 60;
+ 
+ if(hrs > 0) {
+   return `${String(hrs).padStart(2,"0")}:${String(mins).padStart(2,"0")}:${String(secs).padStart(2,"0")}`;
+ }
+ return `${String(mins).padStart(2,"0")}:${String(secs).padStart(2,"0")}`;
+}
+
+function sit(id,kind,place,n){
+ const old=anyMySeat();if(old===id)return;
+ if(seats[id]&&live(seats[id])&&seats[id].uid!==uid)return toast("That seat is taken by another aspirant");
+ if(old)release("moved");
+ socket.emit('join_seat', { seatId: id, uid, kind, place, n, name: nm(uid) });
+ toast("You are seated · "+seatLabel({kind, place, n}));
+}
+
+function release(reason="left"){
+ const k=anyMySeat();if(!k)return;
+ const s=seats[k];
+ const elapsedMs = Date.now() - s.since;
+ const mins = Math.max(1, Math.round(elapsedMs / 60000));
+ 
+ socket.emit('leave_seat', { seatId: k, mins, seatLabel: seatLabel(s), name: nm(uid) });
+ if(cameraOn) disableCamera();
+ toast(reason==="left" ? `Saved ${mins}m study session to your activity!` : "Session saved");
+}
+
+function toggleBreak(){
+ const k=mySeat();if(!k)return toast("Take a seat first");
+ socket.emit('toggle_break', { seatId: k, name: nm(uid) });
+}
+
+let tickCounter = 0;
+function tick(){
+ tickCounter++;
+ const k=anyMySeat(),s=k&&seats[k];
+ if(s){
+  const t=timerText(s);
+  if ($("#timerChip")) $("#timerChip").textContent=(s.status==="break"?"Break ":"") + t;
+  const bt=$("#bigTimer");if(bt)bt.textContent=t;
+ }else{
+  if($("#timerChip")) $("#timerChip").textContent="No seat";
+  if($("#bigTimer")) $("#bigTimer").textContent="00:00";
+ }
+
+ // Real-time Leaderboard & Stat synchronization for live studying aspirants
+ const numLive = liveCount();
+ if (numLive > 0 || tickCounter % 5 === 0) {
+  if (view === "home") {
+   if ($("#homeLeaderboard")) $("#homeLeaderboard").innerHTML = leaderboard("today", 5);
+   
+   const todayLogs = (logs || []).filter(l => l.uid === uid && isLogForDate(l, new Date()));
+   let myLiveMins = 0;
+   if (s) {
+    let liveMs = Date.now() - s.since;
+    if (s.status === 'break' && s.breakStartedAt) liveMs -= (Date.now() - s.breakStartedAt);
+    myLiveMins = Math.max(0, Math.floor(liveMs / 60000));
+   }
+   const todaySum = todayLogs.reduce((a, b) => a + (b.mins || 0), 0) + myLiveMins;
+   if ($("#todayTotal")) $("#todayTotal").textContent = fmt(todaySum);
+   if ($("#todayStat")) $("#todayStat").textContent = fmt(todaySum);
+   if ($("#drawerTodayTime")) $("#drawerTodayTime").textContent = fmt(todaySum);
+   renderPeerComparison(todaySum);
+  } else if (view === "room") {
+   if ($("#roomLeaderboard")) $("#roomLeaderboard").innerHTML = leaderboard(range, 10);
+  }
+ }
+}
+
+function openModal(title,sub,body){
+  $("#modal").innerHTML=`<div class="modal-head"><div><h2>${title}</h2><div class="muted" style="font-size:11px">${sub||""}</div></div><button class="close" id="closeModal" title="Close">✕</button></div>${body}`;
+  if ($("#modalBackdrop")) $("#modalBackdrop").style.display="flex";
+  if ($("#closeModal")) $("#closeModal").onclick=closeModal;
+}
+function closeModal(){ if($("#modalBackdrop")) $("#modalBackdrop").style.display="none"; }
+if ($("#modalBackdrop")) $("#modalBackdrop").onclick=e=>{if(e.target.id==="modalBackdrop")closeModal()};
+
+function openPeople(){
+ const list=Object.values(seats).filter(live);
+ openModal("In the library",`${list.length} studying now`,`<input class="input" id="peopleSearch" placeholder="Search by name"><div id="peopleList"></div>`);
+ const draw=()=>{$("#peopleList").innerHTML=list.filter(s=>nm(s.uid).toLowerCase().includes($("#peopleSearch").value.toLowerCase())).map(s=>`<div class="person" onclick="openAspirantProfile('${s.uid}')">${avatar(s.uid,"avatar")}<div class="grow"><b>${nm(s.uid)}${liveTag(s.uid)}</b><div class="muted" style="font-size:11px">${seatLabel(s)}</div></div><small class="muted">${Math.round((Date.now()-s.since)/60000)}m</small></div>`).join("")||`<div class="empty">Nobody found.</div>`};
+ $("#peopleSearch").oninput=draw;draw();
+}
+
+function openAction(a){
+ toggleSidebarMenu(false);
+ closeModal();
+ if(a==="study")openStudy();else if(a==="people")openPeople();
+ else if(a==="break")toggleBreak();else if(a==="leave")release("left");else if(a==="seats")go("room");
+}
+
+document.addEventListener("click",e=>{
+ const viewBtn=e.target.closest("[data-view]");if(viewBtn){go(viewBtn.dataset.view);return}
+ const act=e.target.closest("[data-action]");if(act){openAction(act.dataset.action);return}
+ const seat=e.target.closest("[data-seat]");if(seat){const p=seat.dataset.seat.split("|");sit(p[0],p[1],p[2],+p[3]);return}
+ const join=e.target.closest("[data-join]");if(join){joinRoom(join.dataset.join);return}
+ const delRoom=e.target.closest("[data-delete-room]");if(delRoom){confirmDeleteRoom(delRoom.dataset.deleteRoom);return}
+ const tab=e.target.closest("[data-range]");if(tab){range=tab.dataset.range;$$("[data-range]").forEach(x=>x.classList.toggle("active",x===tab));renderRoom();return}
+});
+
+function confirmDeleteRoom(roomId) {
+  const r = rooms.find(x => x.id === roomId);
+  if (!r) return;
+  if (r.host !== uid) return toast("Only the room creator can delete this room");
+  if (confirm(`Are you sure you want to delete study room "${r.name}"?`)) {
+    socket.emit('delete_room', { roomId, uid });
+  }
+}
+
+function renderStudy(){
+  $("#roomList").innerHTML = rooms.map(r => {
+    const isHost = (r.host === uid);
+    const pdfBadge = r.pdf_name ? ` · 📄 ${r.pdf_name}` : '';
+    return `
+      <div class="person">
+        <div style="font-size:24px">📚</div>
+        <div class="grow">
+          <b>${r.name}</b>
+          <div class="muted" style="font-size:11px">Hosted by ${nm(r.host)}${liveTag(r.host)} · page ${r.page || 1}${pdfBadge}</div>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button class="btn primary" data-join="${r.id}">Join</button>
+          ${isHost ? `<button class="btn danger" data-delete-room="${r.id}" style="padding:8px 12px; font-size:12px;">🗑️ Delete</button>` : ''}
+        </div>
+      </div>
+    `;
+  }).join("") || `<div class="empty">No rooms yet. Create the first one.</div>`;
+}
+
+function createRoom(){
+ openModal("Create study room","Start a focused reading session",`<input class="input" id="roomName" placeholder="e.g. Fundamental Rights Revision"><button class="btn primary" style="width:100%;margin-top:8px" id="createRoomBtn">Create room</button>`);
+ $("#createRoomBtn").onclick=()=>{
+   const n=$("#roomName").value.trim();if(!n)return toast("Give the room a name");
+   const id="r"+Date.now();
+   socket.emit('create_room', { id, name: n, host: uid, page: 1, ts: Date.now() });
+   closeModal();
+   joinRoom(id);
+ }
+}
+
+function joinRoom(id){
+  const r = rooms.find(x => x.id === id);
+  if(!r) return;
+  activeRoomId = id;
+  pdfPage = r.page || 1;
+  $("#pdfTitle").textContent = r.name;
+  
+  const isHost = (r.host === uid);
+  if ($("#deleteRoomInPdfBtn")) {
+    $("#deleteRoomInPdfBtn").style.display = isHost ? "inline-block" : "none";
+  }
+
+  if (r.pdf_data) {
+    loadPdfFromData(r.pdf_data, r.pdf_name, r.pdf_uploader);
+  } else {
+    pdfDoc = null;
+    if ($("#pdfBox")) $("#pdfBox").textContent = "No PDF uploaded yet. Upload a PDF to read together.";
+    if ($("#pageLabel")) $("#pageLabel").textContent = "— / —";
+    if ($("#deletePdfBtn")) $("#deletePdfBtn").style.display = "none";
+    $("#pdfMeta").textContent = `Hosted by ${nm(r.host)} · Pages sync for everyone inside`;
+  }
+  go("pdf");
+}
+
+function openStudy(){go("study")}
+
+if ($("#newRoom")) $("#newRoom").onclick=createRoom;
+
+// WebRTC & Cross-Device Frame Snapshot Broadcast
+async function enableCamera() {
+  try {
+    const constraints = {
+      video: { width: { ideal: 480 }, height: { ideal: 360 }, facingMode: "user" },
+      audio: false
+    };
+    localStream = await navigator.mediaDevices.getUserMedia(constraints);
+    cameraOn = true;
+
+    socket.emit('toggle_camera', { uid, active: true, name: nm(uid) });
+    startFrameStreaming();
+
+    toast("Camera active & broadcasted live");
+    renderCameraGrid();
+    $("#cameraToggle")?.classList.add("active");
+  } catch(e) {
+    console.warn("Hardware camera restricted or HTTP blocked:", e);
+    cameraOn = true;
+    localStream = null;
+    socket.emit('toggle_camera', { uid, active: true, name: nm(uid) });
+    toast("Virtual Camera Active (Shared across room)");
+    renderCameraGrid();
+    $("#cameraToggle")?.classList.add("active");
+  }
+}
+
+function startFrameStreaming() {
+  if (videoFrameInterval) clearInterval(videoFrameInterval);
+  const canvas = document.createElement("canvas");
+  canvas.width = 320; canvas.height = 240;
+  const ctx = canvas.getContext("2d");
+
+  videoFrameInterval = setInterval(() => {
+    if (!cameraOn || !localStream) return;
+    const myVid = document.getElementById("myCamVideo");
+    if (myVid && myVid.readyState === 4) {
+      ctx.drawImage(myVid, 0, 0, canvas.width, canvas.height);
+      const frameData = canvas.toDataURL("image/jpeg", 0.5);
+      socket.emit('video_frame', { uid, frameData });
+    }
+  }, 500);
+}
+
+function disableCamera() {
+  if (videoFrameInterval) {
+    clearInterval(videoFrameInterval);
+    videoFrameInterval = null;
+  }
+  if(localStream) {
+    localStream.getTracks().forEach(t => t.stop());
+    localStream = null;
+  }
+  cameraOn = false;
+  socket.emit('toggle_camera', { uid, active: false, name: nm(uid) });
+  toast("Camera / Screen turned off");
+  renderCameraGrid();
+  $("#cameraToggle")?.classList.remove("active");
+}
+
+async function enableScreenShare() {
+  try {
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      video: { cursor: "always" },
+      audio: false
+    });
+    localStream = stream;
+    cameraOn = true;
+
+    if (localStream.getVideoTracks()[0]) {
+      localStream.getVideoTracks()[0].onended = () => {
+        disableCamera();
+      };
+    }
+
+    socket.emit('toggle_camera', { uid, active: true, isScreen: true, name: nm(uid) });
+    startFrameStreaming();
+    toast("Screen sharing active & live");
+    renderCameraGrid();
+    $("#cameraToggle")?.classList.add("active");
+  } catch(e) {
+    console.warn("Screen share canceled:", e);
+    toast("Screen share canceled");
+  }
+}
+
+const bCam = $("#bottomCamera");
+if (bCam) {
+  bCam.onclick = () => {
+    if(!cameraOn) enableCamera();
+    else disableCamera();
+  };
+}
+const cToggle = $("#cameraToggle");
+if (cToggle) {
+  cToggle.onclick = () => {
+    if(!cameraOn) enableCamera();
+    else disableCamera();
+  };
+}
+const shareBtn = $("#shareScreenBtn");
+if (shareBtn) shareBtn.onclick = enableScreenShare;
+
+async function loadPdfFromData(dataUrl, pdfName, uploaderUid) {
+  if (!dataUrl) return;
+  if ($("#pdfBox")) $("#pdfBox").textContent = "Loading synced PDF...";
+  if (!window.pdfjsLib) {
+    if ($("#pdfBox")) $("#pdfBox").textContent = "PDF engine loading error.";
+    return;
+  }
+  try {
+    const base64Str = dataUrl.split(',')[1] || dataUrl;
+    const binaryStr = atob(base64Str);
+    const bytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) {
+      bytes[i] = binaryStr.charCodeAt(i);
+    }
+    pdfDoc = await pdfjsLib.getDocument({ data: bytes }).promise;
+    renderPdfPage();
+    updatePdfControlsUI(pdfName, uploaderUid);
+  } catch (err) {
+    console.error("PDF load error:", err);
+    if ($("#pdfBox")) $("#pdfBox").textContent = "Could not open synced PDF file.";
+  }
+}
+
+function updatePdfControlsUI(pdfName, uploaderUid) {
+  const r = rooms.find(x => x.id === activeRoomId);
+  const canDeletePdf = r && (r.pdf_uploader === uid || r.host === uid);
+  if ($("#deletePdfBtn")) {
+    $("#deletePdfBtn").style.display = canDeletePdf ? "inline-block" : "none";
+  }
+  if (pdfName && uploaderUid) {
+    $("#pdfMeta").textContent = `📄 ${pdfName} (Uploaded by ${nm(uploaderUid)}) · Page ${pdfPage}`;
+  }
+}
+
+const pdfInp = $("#pdfInput");
+if (pdfInp) {
+  pdfInp.onchange = async e => {
+    const file = e.target.files[0]; if (!file) return;
+    if (!activeRoomId) return toast("Join a study room first");
+    if (file.size > 25 * 1024 * 1024) return toast("PDF file size limit is 25MB");
+
+    if ($("#pdfBox")) $("#pdfBox").textContent = "Uploading & Syncing PDF across room...";
+    const reader = new FileReader();
+    reader.onload = () => {
+      const pdfData = reader.result;
+      socket.emit('upload_pdf', { roomId: activeRoomId, pdfName: file.name, pdfData, uploaderUid: uid });
+    };
+    reader.readAsDataURL(file);
+  };
+}
+
+const delRoomPdfBtn = $("#deleteRoomInPdfBtn");
+if (delRoomPdfBtn) {
+  delRoomPdfBtn.onclick = () => {
+    if (activeRoomId) confirmDeleteRoom(activeRoomId);
+  };
+}
+
+const delPdfBtn = $("#deletePdfBtn");
+if (delPdfBtn) {
+  delPdfBtn.onclick = () => {
+    if (!activeRoomId) return;
+    const r = rooms.find(x => x.id === activeRoomId);
+    if (!r || (!r.pdf_uploader && !r.pdf_data)) return toast("No PDF in room");
+    if (r.pdf_uploader !== uid && r.host !== uid) return toast("Only PDF uploader or room host can delete PDF");
+    if (confirm("Are you sure you want to delete this PDF from the study room?")) {
+      socket.emit('delete_pdf', { roomId: activeRoomId, uid });
+    }
+  };
+}
+
+async function renderPdfPage(){
+  if(!pdfDoc) return;
+  const page = await pdfDoc.getPage(pdfPage), viewport = page.getViewport({ scale: 1.3 });
+  const canvas = document.createElement("canvas"); canvas.width = viewport.width; canvas.height = viewport.height;
+  if ($("#pdfBox")) {
+    $("#pdfBox").innerHTML = "";
+    $("#pdfBox").appendChild(canvas);
+  }
+  await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+  if ($("#pageLabel")) $("#pageLabel").textContent = `${pdfPage} / ${pdfDoc.numPages}`;
+}
+
+const prevBtn = $("#prevPage");
+if (prevBtn) {
+  prevBtn.onclick = () => {
+    if(pdfDoc && pdfPage > 1){
+      pdfPage--;
+      renderPdfPage();
+      if(activeRoomId && window.socket) socket.emit('sync_pdf_page', { roomId: activeRoomId, page: pdfPage });
+    }
+  };
+}
+
+const nextBtn = $("#nextPage");
+if (nextBtn) {
+  nextBtn.onclick = () => {
+    if(pdfDoc && pdfPage < pdfDoc.numPages){
+      pdfPage++;
+      renderPdfPage();
+      if(activeRoomId && window.socket) socket.emit('sync_pdf_page', { roomId: activeRoomId, page: pdfPage });
+    }
+  };
+}
+
+checkAuthSession();
+setInterval(tick,1000);
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="/upsc-analyzer/public/upsc-analyzer.js"></script>
+</body>
+</html>

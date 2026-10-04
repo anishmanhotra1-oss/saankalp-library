@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Virtual Library & Study Space</title>
+  <meta name="description" content="A real-time virtual library for study, book management, and focus collaboration.">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- App Styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Navigation Header -->
+    <header class="navbar">
+      <div class="nav-brand">
+        <div class="brand-logo">
+          <i class="fa-solid fa-book-bookmark"></i>
+        </div>
+        <div class="brand-text">
+          <h1>Athena <span>Virtual Library</span></h1>
+          <p>Real-Time Digital Workspace & Study Rooms</p>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <!-- Live Online Counter -->
+        <div class="status-badge" id="online-counter" title="Active students studying in the virtual library right now">
+          <span class="pulse-dot"></span>
+          <i class="fa-solid fa-users"></i>
+          <span id="active-students-count">1</span> Active Student
+        </div>
+
+        <!-- User Identity Input -->
+        <div class="user-profile-widget">
+          <i class="fa-regular fa-circle-user"></i>
+          <input type="text" id="username-input" placeholder="Your Name" value="Alex Student">
+        </div>
+
+        <!-- Quick Add Book Button -->
+        <button class="btn btn-primary" id="btn-open-add-book">
+          <i class="fa-solid fa-plus"></i> Add Book
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="main-tabs">
+      <button class="tab-btn active" data-tab="catalog">
+        <i class="fa-solid fa-book-open"></i> Book Catalog
+      </button>
+      <button class="tab-btn" data-tab="rooms">
+        <i class="fa-solid fa-headphones"></i> Study Rooms & Timer
+      </button>
+      <button class="tab-btn" data-tab="notes">
+        <i class="fa-solid fa-note-sticky"></i> Shared Study Notes
+      </button>
+      <button class="tab-btn" data-tab="activity">
+        <i class="fa-solid fa-chart-line"></i> Activity & Analytics
+      </button>
+    </nav>
+
+    <!-- Content Sections -->
+    <main class="content-wrapper">
+      
+      <!-- 1. CATALOG TAB -->
+      <section id="tab-catalog" class="tab-content active">
+        <!-- Stats Summary Bar -->
+        <div class="stats-bar">
+          <div class="stat-card">
+            <div class="stat-icon purple"><i class="fa-solid fa-book"></i></div>
+            <div class="stat-info">
+              <h3 id="stat-total-books">0</h3>
+              <p>Total Books in Library</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
+            <div class="stat-info">
+              <h3 id="stat-available-books">0</h3>
+              <p>Available for Reading</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon orange"><i class="fa-solid fa-hand-holding-hand"></i></div>
+            <div class="stat-info">
+              <h3 id="stat-borrowed-books">0</h3>
+              <p>Checked Out Books</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon blue"><i class="fa-solid fa-user-graduate"></i></div>
+            <div class="stat-info">
+              <h3 id="stat-notes-count">0</h3>
+              <p>Shared Study Notes</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Catalog Toolbar (Search & Filter) -->
+        <div class="toolbar">
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="catalog-search" placeholder="Search by title, author, subject, or keywords...">
+          </div>
+
+          <div class="filter-group">
+            <select id="category-filter">
+              <option value="All">All Categories</option>
+              <option value="Computer Science">Computer Science</option>
+              <option value="Physics">Physics</option>
+              <option value="Mathematics">Mathematics</option>
+              <option value="Psychology">Psychology</option>
+              <option value="Chemistry">Chemistry</option>
+              <option value="Economics">Economics</option>
+              <option value="Software Engineering">Software Engineering</option>
+            </select>
+
+            <select id="status-filter">
+              <option value="all">All Availability</option>
+              <option value="available">Available Now</option>
+              <option value="borrowed">Checked Out</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Books Grid -->
+        <div class="books-grid" id="books-container">
+          <!-- Dynamically populated books -->
+        </div>
+      </section>
+
+      <!-- 2. VIRTUAL STUDY ROOMS & TIMER TAB -->
+      <section id="tab-rooms" class="tab-content">
+        <div class="study-dashboard-grid">
+          <!-- Left: Pomodoro & Focus Timer Widget -->
+          <div class="focus-timer-card">
+            <div class="card-header">
+              <h2><i class="fa-solid fa-stopwatch"></i> Focus Pomodoro Timer</h2>
+              <span class="badge badge-accent">Study Sprint</span>
+            </div>
+            
+            <div class="timer-display-wrap">
+              <div class="timer-circle">
+                <svg class="timer-svg" viewBox="0 0 100 100">
+                  <circle class="timer-circle-bg" cx="50" cy="50" r="45"></circle>
+                  <circle class="timer-circle-progress" id="timer-progress-ring" cx="50" cy="50" r="45" stroke-dasharray="283" stroke-dashoffset="0"></circle>
+                </svg>
+                <div class="timer-time" id="timer-display">25:00</div>
+                <div class="timer-status" id="timer-mode-label">Work Session</div>
+              </div>
+            </div>
+
+            <div class="timer-controls">
+              <button class="btn btn-secondary" id="btn-timer-mode-25">25 Min Focus</button>
+              <button class="btn btn-secondary" id="btn-timer-mode-50">50 Min Deep</button>
+              <button class="btn btn-secondary" id="btn-timer-mode-5">5 Min Break</button>
+            </div>
+
+            <div class="timer-action-buttons">
+              <button class="btn btn-primary btn-large" id="btn-timer-toggle">
+                <i class="fa-solid fa-play" id="timer-icon"></i> Start Session
+              </button>
+              <button class="btn btn-outline" id="btn-timer-reset">
+                <i class="fa-solid fa-rotate-right"></i> Reset
+              </button>
+            </div>
+
+            <!-- Ambient Sound Effects Player -->
+            <div class="ambient-audio-section">
+              <h4><i class="fa-solid fa-music"></i> Ambient Background Audio</h4>
+              <div class="ambient-buttons">
+                <button class="ambient-btn" data-sound="rain">
+                  <i class="fa-solid fa-cloud-rain"></i> Gentle Rain
+                </button>
+                <button class="ambient-btn" data-sound="waves">
+                  <i class="fa-solid fa-water"></i> Ocean Waves
+                </button>
+                <button class="ambient-btn" data-sound="cafe">
+                  <i class="fa-solid fa-mug-hot"></i> Cozy Cafe
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Virtual Study Rooms List -->
+          <div class="rooms-list-card">
+            <div class="card-header">
+              <h2><i class="fa-solid fa-door-open"></i> Live Virtual Study Rooms</h2>
+              <span class="badge badge-live">Socket.IO Live</span>
+            </div>
+            <p class="section-desc">Join a study sanctuary to collaborate, track study goals, and keep each other accountable in real time.</p>
+
+            <div class="rooms-grid" id="rooms-container">
+              <!-- Dynamically loaded study rooms -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. SHARED NOTES TAB -->
+      <section id="tab-notes" class="tab-content">
+        <div class="notes-layout">
+          <!-- Post Note Sidebar -->
+          <div class="create-note-card">
+            <h3><i class="fa-solid fa-pen-to-square"></i> Share Study Notes</h3>
+            <p>Publish summary notes, formulas, or study guides for fellow library students.</p>
+
+            <form id="form-create-note">
+              <div class="form-group">
+                <label for="note-subject">Subject / Course</label>
+                <select id="note-subject" required>
+                  <option value="Computer Science">Computer Science</option>
+                  <option value="Physics">Physics</option>
+                  <option value="Mathematics">Mathematics</option>
+                  <option value="Software Engineering">Software Engineering</option>
+                  <option value="Psychology">Psychology</option>
+                  <option value="Chemistry">Chemistry</option>
+                  <option value="General Study">General Study</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="note-title">Note Title</label>
+                <input type="text" id="note-title" placeholder="e.g. Quick Dynamic Programming Overview" required>
+              </div>
+
+              <div class="form-group">
+                <label for="note-content">Key Takeaways & Details</label>
+                <textarea id="note-content" rows="6" placeholder="Write formulas, definitions, key takeaways, or solutions..." required></textarea>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block">
+                <i class="fa-solid fa-paper-plane"></i> Publish Note
+              </button>
+            </form>
+          </div>
+
+          <!-- Notes Feed -->
+          <div class="notes-feed-container">
+            <div class="feed-header">
+              <h2><i class="fa-solid fa-note-sticky"></i> Student Knowledge Board</h2>
+              <span class="note-count-tag" id="notes-board-count">0 Notes</span>
+            </div>
+            <div class="notes-grid" id="notes-container">
+              <!-- Dynamically loaded study notes -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. ACTIVITY & ANALYTICS TAB -->
+      <section id="tab-activity" class="tab-content">
+        <div class="activity-grid">
+          <div class="activity-log-card">
+            <div class="card-header">
+              <h2><i class="fa-solid fa-clock-rotate-left"></i> Real-Time Activity Log</h2>
+              <span class="badge badge-purple">Live Feed</span>
+            </div>
+            <div class="activity-stream" id="activity-stream">
+              <!-- Activity log list -->
+            </div>
+          </div>
+
+          <div class="study-tips-card">
+            <div class="card-header">
+              <h2><i class="fa-solid fa-lightbulb"></i> Study Best Practices</h2>
+            </div>
+            <div class="tips-list">
+              <div class="tip-item">
+                <i class="fa-solid fa-brain tip-icon"></i>
+                <div>
+                  <h4>Spaced Repetition</h4>
+                  <p>Review key notes 1 day, 3 days, and 7 days after reading for maximum long-term retention.</p>
+                </div>
+              </div>
+              <div class="tip-item">
+                <i class="fa-solid fa-bullseye tip-icon"></i>
+                <div>
+                  <h4>Feynman Technique</h4>
+                  <p>Explain complex concepts in simple terms on the Shared Notes board as if teaching a peer.</p>
+                </div>
+              </div>
+              <div class="tip-item">
+                <i class="fa-solid fa-droplet tip-icon"></i>
+                <div>
+                  <h4>Active Recall Sprints</h4>
+                  <p>Use our 25-minute Pomodoro timer for undisturbed concentration without multi-tasking.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL 1: BOOK READER & DETAILS MODAL -->
+  <div class="modal-backdrop" id="modal-book-details">
+    <div class="modal-card">
+      <button class="modal-close" id="btn-close-book-modal"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-body-book" id="book-modal-content">
+        <!-- Content inserted dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: ADD NEW BOOK MODAL -->
+  <div class="modal-backdrop" id="modal-add-book">
+    <div class="modal-card">
+      <button class="modal-close" id="btn-close-add-modal"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-header">
+        <h2><i class="fa-solid fa-book"></i> Add New Book to Library</h2>
+        <p>Expand our virtual catalog with textbook resources or study guides.</p>
+      </div>
+      <form id="form-add-book">
+        <div class="form-group">
+          <label>Book Title *</label>
+          <input type="text" id="add-book-title" placeholder="e.g. Modern Database Systems" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Author Name *</label>
+            <input type="text" id="add-book-author" placeholder="e.g. Dr. Jane Smith" required>
+          </div>
+          <div class="form-group">
+            <label>Category *</label>
+            <select id="add-book-category" required>
+              <option value="Computer Science">Computer Science</option>
+              <option value="Physics">Physics</option>
+              <option value="Mathematics">Mathematics</option>
+              <option value="Software Engineering">Software Engineering</option>
+              <option value="Psychology">Psychology</option>
+              <option value="Chemistry">Chemistry</option>
+              <option value="Economics">Economics</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Cover Theme</label>
+            <select id="add-book-color">
+              <option value="linear-gradient(135deg, #4f46e5, #7c3aed)">Indigo Gradient</option>
+              <option value="linear-gradient(135deg, #2563eb, #06b6d4)">Cyan Ocean Gradient</option>
+              <option value="linear-gradient(135deg, #059669, #10b981)">Emerald Gradient</option>
+              <option value="linear-gradient(135deg, #d97706, #f59e0b)">Amber Gold Gradient</option>
+              <option value="linear-gradient(135deg, #ec4899, #8b5cf6)">Rose Violet Gradient</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Page Count</label>
+            <input type="number" id="add-book-pages" placeholder="350" value="350">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Description & Learning Objectives</label>
+          <textarea id="add-book-desc" rows="3" placeholder="Brief summary of the book contents..."></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-add-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Save Book</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 3: ACTIVE VIRTUAL STUDY ROOM MODAL -->
+  <div class="modal-backdrop" id="modal-active-room">
+    <div class="modal-card modal-large">
+      <button class="modal-close" id="btn-close-room-modal"><i class="fa-solid fa-xmark"></i></button>
+      <div class="room-session-header">
+        <div class="room-info">
+          <h2 id="active-room-title"><i class="fa-solid fa-headphones"></i> Room Name</h2>
+          <p id="active-room-desc">Room description</p>
+        </div>
+        <button class="btn btn-danger" id="btn-leave-room"><i class="fa-solid fa-door-closed"></i> Leave Room</button>
+      </div>
+
+      <div class="room-session-body">
+        <!-- Room Chat Column -->
+        <div class="room-chat-box">
+          <div class="chat-header">
+            <span><i class="fa-solid fa-comments"></i> Room Live Chat</span>
+            <span class="badge badge-live">Live</span>
+          </div>
+          <div class="chat-messages" id="room-chat-messages">
+            <!-- Messages populating -->
+          </div>
+          <form class="chat-input-bar" id="form-room-chat">
+            <input type="text" id="input-room-chat" placeholder="Type a encouraging study note or question..." required>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i></button>
+          </form>
+        </div>
+
+        <!-- Room Occupants & Goals Column -->
+        <div class="room-occupants-sidebar">
+          <h3><i class="fa-solid fa-users"></i> Studying Here (<span id="active-room-count">0</span>)</h3>
+          <div class="occupants-list" id="active-room-occupants-list">
+            <!-- Occupant list -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Socket.IO Client Script -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Application Client JS -->
+  <script src="app.js"></script>
+</body>
+</html>
