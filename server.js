@@ -15,6 +15,18 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(__dirname));
 
+// Self-Ping Keep Alive (Prevents Render Free Tier from Sleeping)
+const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
+if (RENDER_URL) {
+  setInterval(() => {
+    http.get(RENDER_URL, (res) => {
+      console.log(`[Keep-Alive] Pinged ${RENDER_URL} - Status: ${res.statusCode}`);
+    }).on('error', (err) => {
+      console.error('[Keep-Alive] Ping error:', err.message);
+    });
+  }, 10 * 60 * 1000); // Pings every 10 minutes to keep server awake
+}
+
 // UPSC Newspaper Analyzer isolated API route
 app.use('/api/upsc-analyzer', require('./upsc-analyzer/routes/analyzer-route'));
 app.use('/upsc-analyzer', express.static(path.join(__dirname, 'upsc-analyzer')));
