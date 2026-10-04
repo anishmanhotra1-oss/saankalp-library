@@ -1575,6 +1575,16 @@ function performLogout() {
       let liveMs = end - s.since;
       if (s.status === 'break' && s.breakStartedAt) liveMs -= (end - s.breakStartedAt);
       const mins = Math.max(1, Math.round(liveMs / 60000));
+      const localLogObj = {
+        id: 'local_' + end,
+        uid: uid,
+        seat_label: seatLabel(s),
+        mins: mins,
+        start_time: s.since,
+        end_time: end,
+        date_key: dateKey(new Date(end))
+      };
+      saveUserLogLocally(localLogObj);
       socket.emit('leave_seat', { seatId: k, mins, seatLabel: seatLabel(s), name: nm(uid) });
     }
   }
@@ -1828,6 +1838,65 @@ const avatar=(u,cls="mini-avatar")=>`<div class="${cls}" style="background:${col
 
 function toast(msg){const e=$("#toast");e.textContent=msg;e.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display="none",2400)}
 
+function getLocalLogsKey() {
+  return uid ? `saankalp_user_logs_${uid}` : 'saankalp_user_logs_demo';
+}
+
+function saveUserLogLocally(log) {
+  if (!log || !uid) return;
+  try {
+    const key = getLocalLogsKey();
+    const existingStr = localStorage.getItem(key);
+    let userLogs = existingStr ? JSON.parse(existingStr) : [];
+    
+    const idx = userLogs.findIndex(l => 
+      (l.id && log.id && String(l.id) === String(log.id)) || 
+      (l.start_time && log.start_time && Math.abs(l.start_time - log.start_time) < 2000 && l.uid === log.uid)
+    );
+
+    if (idx !== -1) {
+      userLogs[idx] = log;
+    } else {
+      userLogs.unshift(log);
+    }
+
+    userLogs = userLogs.slice(0, 100);
+    localStorage.setItem(key, JSON.stringify(userLogs));
+  } catch (e) {
+    console.warn("Failed to save log locally:", e);
+  }
+}
+
+function restoreUserLogsLocally(serverLogs = []) {
+  if (!uid) return serverLogs;
+  try {
+    const key = getLocalLogsKey();
+    const existingStr = localStorage.getItem(key);
+    const localLogs = existingStr ? JSON.parse(existingStr) : [];
+    
+    const combined = [...serverLogs];
+
+    localLogs.forEach(l => {
+      const existsInServer = combined.some(s => 
+        (s.id && l.id && String(s.id) === String(l.id)) ||
+        (s.start_time && l.start_time && Math.abs(s.start_time - l.start_time) < 2000 && s.uid === l.uid)
+      );
+      if (!existsInServer) {
+        combined.push(l);
+      }
+    });
+
+    combined.sort((a, b) => (b.start_time || b.end_time || 0) - (a.start_time || a.end_time || 0));
+
+    localStorage.setItem(key, JSON.stringify(combined.filter(x => x.uid === uid).slice(0, 100)));
+
+    return combined;
+  } catch (e) {
+    console.warn("Failed to restore local logs:", e);
+    return serverLogs;
+  }
+}
+
 // Socket.io Realtime Syncing Setup
 socket.on('connect', () => {
   fetch('/api/initial-data')
@@ -1836,7 +1905,7 @@ socket.on('connect', () => {
       data.users.forEach(u => names[u.uid] = u.name);
       chats = data.chats || [];
       rooms = data.rooms || [];
-      logs = data.logs || [];
+      logs = restoreUserLogsLocally(data.logs || []);
       notifications = data.notifications || [];
       friends = data.friends || [];
       seats = data.activeSeats || {};
@@ -1915,7 +1984,13 @@ socket.on('new_chat', (msg) => {
 });
 
 socket.on('log_added', (log) => {
-  logs.unshift(log);
+  saveUserLogLocally(log);
+  const tempIdx = logs.findIndex(l => (l.id && log.id && String(l.id) === String(log.id)) || (l.uid === log.uid && Math.abs((l.start_time || 0) - (log.start_time || 0)) < 2000));
+  if (tempIdx !== -1) {
+    logs[tempIdx] = log;
+  } else {
+    logs.unshift(log);
+  }
   renderHome();
 });
 
@@ -2281,12 +2356,34 @@ function sit(id,kind,place,n){
 function release(reason="left"){
  const k=anyMySeat();if(!k)return;
  const s=seats[k];
- const elapsedMs = Date.now() - s.since;
- const mins = Math.max(1, Math.round(elapsedMs / 60000));
- 
- socket.emit('leave_seat', { seatId: k, mins, seatLabel: seatLabel(s), name: nm(uid) });
+ const start = s.since;
+ const end = Date.now();
+ let liveMs = end - start;
+ if (s.status === 'break' && s.breakStartedAt) liveMs -= (end - s.breakStartedAt);
+ const mins = Math.max(1, Math.round(liveMs / 60000));
+ const dateKeyVal = dateKey(new Date(end));
+ const seatLbl = seatLabel(s);
+
+ const localLogObj = {
+   id: 'local_' + end,
+   uid: uid,
+   seat_label: seatLbl,
+   mins: mins,
+   start_time: start,
+   end_time: end,
+   date_key: dateKeyVal
+ };
+
+ saveUserLogLocally(localLogObj);
+ const existingIdx = logs.findIndex(l => l.uid === uid && Math.abs((l.start_time || 0) - start) < 2000);
+ if (existingIdx === -1) {
+   logs.unshift(localLogObj);
+ }
+
+ socket.emit('leave_seat', { seatId: k, mins, seatLabel: seatLbl, name: nm(uid) });
  if(cameraOn) disableCamera();
  toast(reason==="left" ? `Saved ${mins}m study session to your activity!` : "Session saved");
+ renderHome();
 }
 
 function toggleBreak(){

@@ -385,22 +385,23 @@ io.on('connection', (socket) => {
       const calculatedMins = Math.max(1, Math.round((end - start) / 60000));
       const finalMins = mins && mins > 0 ? mins : calculatedMins;
       const dateKey = getLocalDateKey(end);
+      const uid = seat.uid;
+      delete activeSeats[seatId];
+      delete activeCameras[socket.id];
+      io.emit('seat_updated', activeSeats);
+      io.emit('camera_updated', activeCameras);
 
       db.run(
         `INSERT INTO study_logs (uid, seat_label, mins, start_time, end_time, date_key) VALUES (?, ?, ?, ?, ?, ?)`,
-        [seat.uid, seatLabel, finalMins, start, end, dateKey],
+        [uid, seatLabel, finalMins, start, end, dateKey],
         function(err) {
           if (!err) {
-            const newLog = { id: this.lastID, uid: seat.uid, seat_label: seatLabel, mins: finalMins, start_time: start, end_time: end, date_key: dateKey };
+            const newLog = { id: this.lastID, uid, seat_label: seatLabel, mins: finalMins, start_time: start, end_time: end, date_key: dateKey };
             io.emit('log_added', newLog);
             addNotification(`⏱️ ${name || 'Aspirant'} completed a ${finalMins}m study session!`);
           }
         }
       );
-      delete activeSeats[seatId];
-      delete activeCameras[socket.id];
-      io.emit('seat_updated', activeSeats);
-      io.emit('camera_updated', activeCameras);
     }
   });
 
@@ -554,6 +555,7 @@ io.on('connection', (socket) => {
         const seatLabel = seat.kind === 'W' ? `Window Desk W${seat.n}` : `Table ${seat.place} Seat S${seat.n}`;
         const dateKey = getLocalDateKey(end);
         const uid = seat.uid;
+        delete activeSeats[seatId];
 
         db.run(
           `INSERT INTO study_logs (uid, seat_label, mins, start_time, end_time, date_key) VALUES (?, ?, ?, ?, ?, ?)`,
@@ -566,7 +568,6 @@ io.on('connection', (socket) => {
             }
           }
         );
-        delete activeSeats[seatId];
       }
     });
     delete activeCameras[socket.id];
