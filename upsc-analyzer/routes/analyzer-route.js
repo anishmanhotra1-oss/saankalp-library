@@ -45,9 +45,9 @@ Your objective is to perform an EXHAUSTIVE, HIGH-YIELD, DEEP-DIVE EXAMINATION AN
 =====================================================
 TOP-TIER UPSC ANALYSIS MANDATES
 =====================================================
-1. DO NOT TRUNCATE, SUMMARIZE CASUALLY, OR OMIT ANY TOPIC OR ARTICLE.
-2. Produce comprehensive, rich, high-density structured JSON for EVERY article detected.
-3. Every section must contain actionable, exam-worthy depth (e.g. specific constitutional articles, numbers/units, landmark legal precedents, committee recommendations, and multi-dimensional analysis).
+1. ZERO TRUNCATION / NO OMISSIONS: Read every single word, headline, news article, and transcript paragraph in full detail. DO NOT omit, drop, skip, or casually truncate any topic or detail mentioned in the input text/transcript.
+2. GEOGRAPHY & BIODIVERSITY EXTRACTION: You MUST explicitly detect and list all Places in News (cities, countries, rivers, straits, seas, borders, map pointers) AND all Species/Flora/Fauna, IUCN status, National Parks, Wildlife Sanctuaries, Tiger Reserves, Ramsar sites, and Biosphere Reserves mentioned or relevant.
+3. HIGH-DENSITY STRUCTURED JSON: Produce rich, high-density structured JSON for EVERY article detected. Include specific constitutional articles, numbers/units, landmark legal precedents, committee recommendations, and prelims facts.
 4. Syllabus Mapping: You MUST map each article to valid Syllabus Topic IDs ONLY from this reference list:
 ${syllabusListStr}
 Reject/do not invent any ID not present in the list above.
@@ -60,6 +60,8 @@ For every article, extract exhaustively (where applicable):
 - timestamp: Start-end timestamp if video source (e.g. "04:12 - 08:30") or "N/A"
 - context: Detailed background, root causes, and why this topic is currently in the news.
 - data: Key facts, statistics, percentages, index scores, financial allocations, and budget figures (always include exact units).
+- places: [Places in news, Cities, Countries, Rivers, Straits, Seas, Mountain ranges, Border areas, Map pointers]
+- species_national_parks: [Flora & Fauna, Endangered/Vulnerable Species, IUCN Red List status, National Parks, Wildlife Sanctuaries, Tiger Reserves, Biosphere Reserves, Ramsar Sites]
 - personalities: [{ name, role, relevance }]
 - quotes: [{ text, by }] (Notable quotes by Judges, Ministers, Economists, Experts)
 - judgements: [{ case, year, principle }] (Landmark SC/HC judgments, legal tests like Proportionality, Basic Structure, etc.)
@@ -68,7 +70,6 @@ For every article, extract exhaustively (where applicable):
 - schemes: [Government Schemes, Missions, Policies, Infrastructure Projects]
 - international: [Bilateral/Multilateral treaties, Forums, Global groupings, Geopolitical implications]
 - reports_indices: [Publisher, Rank, Score, Key Findings]
-- places: [Places in news, Geographical features, Border areas, Map pointers]
 - glossary: [{ term, meaning }] (Technical/Economic/Legal terms simplified with exact definitions)
 - pros: [Multi-dimensional Advantages: Social, Economic, Governance, Environmental, Tech, Geopolitical]
 - cons: [Multi-dimensional Challenges/Drawbacks: Implementation bottlenecks, Legal, Structural, Financial]
@@ -90,6 +91,8 @@ Respond ONLY with a valid JSON object matching this schema:
       "timestamp": "...",
       "context": "...",
       "data": ["..."],
+      "places": ["..."],
+      "species_national_parks": ["..."],
       "personalities": [{"name": "...", "role": "...", "relevance": "..."}],
       "quotes": [{"text": "...", "by": "..."}],
       "judgements": [{"case": "...", "year": "...", "principle": "..."}],
@@ -98,7 +101,6 @@ Respond ONLY with a valid JSON object matching this schema:
       "schemes": ["..."],
       "international": ["..."],
       "reports_indices": ["..."],
-      "places": ["..."],
       "glossary": [{"term": "...", "meaning": "..."}],
       "pros": ["..."],
       "cons": ["..."],

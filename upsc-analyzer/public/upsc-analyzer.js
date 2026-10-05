@@ -417,6 +417,20 @@
       </div>
     ` : '';
 
+    const placesHtml = art.places && art.places.length ? `
+      <div class="ua-section-box" style="background: #fdf4ff; border-color: #f5d0fe;">
+        <div class="ua-section-title" style="color: #86198f;">📍 Places in News & Map Pointers</div>
+        <ul class="ua-section-list" style="color: #701a75;">${art.places.map(p => `<li>${p}</li>`).join('')}</ul>
+      </div>
+    ` : '';
+
+    const speciesHtml = (art.species_national_parks || art.species) && ((art.species_national_parks && art.species_national_parks.length) || (art.species && art.species.length)) ? `
+      <div class="ua-section-box" style="background: #f0fdf4; border-color: #bbf7d0;">
+        <div class="ua-section-title" style="color: #166534;">🌿 Species, National Parks & Environment</div>
+        <ul class="ua-section-list" style="color: #14532d;">${(art.species_national_parks || art.species).map(s => `<li>${s}</li>`).join('')}</ul>
+      </div>
+    ` : '';
+
     const prelimsHtml = art.prelims_pointers && art.prelims_pointers.length ? `
       <div class="ua-section-box" style="background: #eff6ff; border-color: #bfdbfe;">
         <div class="ua-section-title" style="color: #1e40af;">🎯 Possible Prelims Angle</div>
@@ -459,6 +473,8 @@
 
           ${syllabusHtml}
           ${dataHtml}
+          ${placesHtml}
+          ${speciesHtml}
           ${quotesHtml}
           ${judgementsHtml}
           ${actsHtml}
@@ -528,6 +544,8 @@
     str += `Summary: ${art.summary || art.context}\n\n`;
 
     if (art.data && art.data.length) str += `[KEY DATA & STATS]\n- ${art.data.join('\n- ')}\n\n`;
+    if (art.places && art.places.length) str += `[PLACES IN NEWS & MAP POINTERS]\n- ${art.places.join('\n- ')}\n\n`;
+    if ((art.species_national_parks || art.species) && (art.species_national_parks?.length || art.species?.length)) str += `[SPECIES & NATIONAL PARKS]\n- ${(art.species_national_parks || art.species).join('\n- ')}\n\n`;
     if (art.judgements && art.judgements.length) str += `[JUDGEMENTS]\n- ` + art.judgements.map(j => `${j.case}: ${j.principle}`).join('\n- ') + `\n\n`;
     if (art.acts && art.acts.length) str += `[ACTS & ARTICLES]\n- ${art.acts.join('\n- ')}\n\n`;
     if (art.prelims_pointers && art.prelims_pointers.length) str += `[PRELIMS POINTERS]\n- ${art.prelims_pointers.join('\n- ')}\n\n`;
@@ -579,6 +597,28 @@
             <b style="font-size: 12.5px; color: #1e40af;">📊 Key Statistics & Data:</b>
             <ul style="margin: 3px 0 0 0; padding-left: 18px; font-size: 12px; color: #334155; line-height: 1.5;">
               ${art.data.map(d => `<li>${d}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      }
+
+      if (art.places && art.places.length) {
+        html += `
+          <div style="background: #fdf4ff; border: 1px solid #f5d0fe; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px;">
+            <b style="color: #86198f; font-size: 12.5px;">📍 Places in News & Map Pointers:</b>
+            <ul style="margin: 4px 0 0 0; padding-left: 18px; font-size: 12px; color: #701a75; line-height: 1.5;">
+              ${art.places.map(p => `<li>${p}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      }
+
+      if ((art.species_national_parks || art.species) && (art.species_national_parks?.length || art.species?.length)) {
+        html += `
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px;">
+            <b style="color: #166534; font-size: 12.5px;">🌿 Species, National Parks & Environment:</b>
+            <ul style="margin: 4px 0 0 0; padding-left: 18px; font-size: 12px; color: #14532d; line-height: 1.5;">
+              ${(art.species_national_parks || art.species).map(s => `<li>${s}</li>`).join('')}
             </ul>
           </div>
         `;
