@@ -5,11 +5,93 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const os = require('os');
 
+// Auto-load .env configuration if present
+try {
+  if (fs.existsSync(path.join(__dirname, '.env'))) {
+    const envContent = fs.readFileSync(path.join(__dirname, '.env'), 'utf8');
+    envContent.split('\n').forEach(line => {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+        const [k, ...v] = trimmed.split('=');
+        const key = k.trim();
+        const val = v.join('=').trim().replace(/^['"]|['"]$/g, '');
+        if (key && !process.env[key]) {
+          process.env[key] = val;
+        }
+      }
+    });
+  }
+} catch (e) {}
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: "*" }
 });
+
+// Security Middleware: Set HTTP Security Headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
+// Security Middleware: Block Public Access to Sensitive System & Database Files
+app.use((req, res, next) => {
+  const cleanUrl = req.path.toLowerCase();
+  if (
+    cleanUrl.includes('.env') ||
+    cleanUrl.endsWith('.db') ||
+    cleanUrl.endsWith('.sqlite') ||
+    cleanUrl.includes('.git') ||
+    cleanUrl.includes('node_modules') ||
+    cleanUrl.endsWith('.bat') ||
+    (cleanUrl.endsWith('.json') && !cleanUrl.endsWith('manifest.json') && !cleanUrl.startsWith('/api/'))
+  ) {
+    console.warn(`[Security Guard] Blocked access to restricted file: ${req.url} from IP: ${req.ip || req.socket.remoteAddress}`);
+    return res.status(403).json({ error: 'Access Denied: Protected System Resource' });
+  }
+  next();
+});
+
+// Security Middleware: In-Memory Rate Limiting
+const rateLimitStore = new Map();
+function createRateLimiter(windowMs = 60000, maxRequests = 100, message = 'Too many requests. Please try again later.') {
+  return (req, res, next) => {
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+    const key = `${req.path}_${ip}`;
+    const now = Date.now();
+
+    let record = rateLimitStore.get(key);
+    if (!record || now - record.startTime > windowMs) {
+      record = { startTime: now, count: 1 };
+    } else {
+      record.count++;
+    }
+    rateLimitStore.set(key, record);
+
+    if (record.count > maxRequests) {
+      return res.status(429).json({ error: message });
+    }
+    next();
+  };
+}
+
+// Periodically clean up expired rate limit entries every 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, record] of rateLimitStore.entries()) {
+    if (now - record.startTime > 10 * 60 * 1000) {
+      rateLimitStore.delete(key);
+    }
+  }
+}, 10 * 60 * 1000);
+
+// Apply Rate Limits to sensitive API endpoints
+app.use('/api/auth/', createRateLimiter(60000, 25, 'Too many authentication attempts. Please wait 1 minute.'));
+app.use('/api/upsc-analyzer/analyze', createRateLimiter(60000, 15, 'Analysis limit reached. Please wait a minute before submitting again.'));
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -20,6 +102,17 @@ app.get('/sw.js', (req, res) => {
   res.setHeader('Service-Worker-Allowed', '/');
   res.sendFile(path.join(__dirname, 'sw.js'));
 });
+
+// Helper Function: HTML Sanitization against XSS
+function sanitizeText(str) {
+  if (typeof str !== 'string') return str;
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
 
 // Self-Ping Keep Alive (Prevents Render Free Tier from Sleeping)
 const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
@@ -182,7 +275,8 @@ app.post('/api/auth/check-phone', (req, res) => {
     return res.status(400).json({ error: 'Valid 10-digit mobile number required' });
   }
 
-  db.get('SELECT * FROM users WHERE phone = ? OR uid = ? OR phone LIKE ?', [cleanPhone, cleanPhone, `%${cleanPhone}`], (err, user) => {
+  const likePattern = '%' + cleanPhone + '%';
+  db.get('SELECT * FROM users WHERE phone = ? OR uid = ? OR phone LIKE ?', [cleanPhone, cleanPhone, likePattern], (err, user) => {
     if (user) {
       return res.json({ exists: true, user: { uid: user.uid, name: user.name, exam_target: user.exam_target, phone: user.phone || cleanPhone } });
     }
@@ -251,7 +345,8 @@ function registerOrLoginUser(rawPhone, name, examTarget, res) {
   pendingOtps.delete(phone);
 
   const queryUser = () => {
-    db.get('SELECT * FROM users WHERE phone = ? OR uid = ? OR phone LIKE ?', [phone, phone, `%${phone}`], (err, user) => {
+    const likePattern = '%' + phone + '%';
+    db.get('SELECT * FROM users WHERE phone = ? OR uid = ? OR phone LIKE ?', [phone, phone, likePattern], (err, user) => {
       if (err) {
         if (err.message && err.message.includes('no such column')) {
           db.run(`ALTER TABLE users ADD COLUMN phone TEXT UNIQUE`, () => {
@@ -422,7 +517,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('send_chat', (data) => {
-    const { uid, room, text, ts } = data;
+    if (!data || !data.text) return;
+    const uid = sanitizeText(data.uid);
+    const room = sanitizeText(data.room);
+    const text = sanitizeText(data.text);
+    const ts = data.ts || Date.now();
     db.run(
       `INSERT INTO chats (uid, room, text, ts) VALUES (?, ?, ?, ?)`,
       [uid, room, text, ts],
@@ -436,13 +535,18 @@ io.on('connection', (socket) => {
   });
 
   socket.on('create_room', (roomData) => {
-    const { id, name, host, page, ts } = roomData;
+    if (!roomData || !roomData.name) return;
+    const id = sanitizeText(roomData.id);
+    const name = sanitizeText(roomData.name);
+    const host = sanitizeText(roomData.host);
+    const page = Number(roomData.page) || 1;
+    const ts = roomData.ts || Date.now();
     db.run(
       `INSERT INTO rooms (id, name, host, page, ts) VALUES (?, ?, ?, ?, ?)`,
-      [id, name, host, page || 1, ts || Date.now()],
+      [id, name, host, page, ts],
       (err) => {
         if (!err) {
-          io.emit('room_created', roomData);
+          io.emit('room_created', { id, name, host, page, ts });
           addNotification(`📚 New study group created: ${name}`);
         }
       }
@@ -450,11 +554,12 @@ io.on('connection', (socket) => {
   });
 
   socket.on('delete_room', ({ roomId, uid: requesterUid }) => {
-    db.get('SELECT * FROM rooms WHERE id = ?', [roomId], (err, room) => {
+    const cleanRoomId = sanitizeText(roomId);
+    db.get('SELECT * FROM rooms WHERE id = ?', [cleanRoomId], (err, room) => {
       if (room && room.host === requesterUid) {
-        db.run('DELETE FROM rooms WHERE id = ?', [roomId], (err) => {
+        db.run('DELETE FROM rooms WHERE id = ?', [cleanRoomId], (err) => {
           if (!err) {
-            io.emit('room_deleted', { roomId });
+            io.emit('room_deleted', { roomId: cleanRoomId });
             addNotification(`🗑️ Study room "${room.name}" was closed by host.`);
           }
         });
@@ -463,13 +568,24 @@ io.on('connection', (socket) => {
   });
 
   socket.on('upload_pdf', ({ roomId, pdfName, pdfData, uploaderUid }) => {
+    if (!pdfData || typeof pdfData !== 'string') return;
+    
+    // Security Check: Validate payload size (max 15MB base64) and PDF mime signature
+    if (pdfData.length > 15 * 1024 * 1024) {
+      console.warn(`[Security Alert] Rejected oversized PDF upload in room ${roomId}`);
+      return;
+    }
+    
+    const cleanPdfName = sanitizeText(pdfName || 'Document.pdf');
+    const cleanRoomId = sanitizeText(roomId);
+
     db.run(
       `UPDATE rooms SET pdf_name = ?, pdf_data = ?, pdf_uploader = ?, page = 1 WHERE id = ?`,
-      [pdfName, pdfData, uploaderUid, roomId],
+      [cleanPdfName, pdfData, uploaderUid, cleanRoomId],
       (err) => {
         if (!err) {
-          io.emit('pdf_uploaded', { roomId, pdfName, pdfData, pdfUploader: uploaderUid, page: 1 });
-          addNotification(`📄 New document uploaded in study room: ${pdfName}`);
+          io.emit('pdf_uploaded', { roomId: cleanRoomId, pdfName: cleanPdfName, pdfData, pdfUploader: uploaderUid, page: 1 });
+          addNotification(`📄 New document uploaded in study room: ${cleanPdfName}`);
         }
       }
     );

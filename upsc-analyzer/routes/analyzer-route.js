@@ -12,7 +12,7 @@ try {
   console.error("Error reading syllabus.json:", err);
 }
 
-// Extract API Key from Environment
+// Extract API Key from Environment or .env file
 function getGeminiApiKey() {
   if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '') {
     return process.env.GEMINI_API_KEY.trim();
@@ -24,11 +24,12 @@ function getGeminiApiKey() {
       const content = fs.readFileSync(envPath, 'utf8');
       const match = content.match(/GEMINI_API_KEY\s*=\s*(.*)/);
       if (match && match[1]) {
-        return match[1].trim().replace(/^['"]|['"]$/g, '');
+        const extracted = match[1].trim().replace(/^['"]|['"]$/g, '');
+        if (extracted) return extracted;
       }
     }
   } catch (e) {}
-  return null;
+  return process.env.DEFAULT_GEMINI_KEY || null;
 }
 
 // Build Prompt with Syllabus context
@@ -221,8 +222,8 @@ router.post('/analyze', async (req, res) => {
       contents.push({ parts });
     }
 
-    // Call Gemini REST API with Model Fallback (using active supported models)
-    const modelsToTry = ['gemini-3.5-flash', 'gemini-flash-latest', 'gemini-3-flash-preview', 'gemini-3.1-flash-lite', 'gemini-3.8-flash'];
+    // Call Gemini REST API with Model Fallback (using active supported Google Gemini models)
+    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-lite', 'gemini-flash-latest'];
     let response = null;
     let errorText = '';
 
