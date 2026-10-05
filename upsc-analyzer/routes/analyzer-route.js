@@ -222,8 +222,14 @@ router.post('/analyze', async (req, res) => {
       contents.push({ parts });
     }
 
-    // Call Gemini REST API with Model Fallback (using active supported Google Gemini models)
-    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-lite', 'gemini-flash-latest'];
+    // Call Gemini REST API with Model Fallback & Retry Logic for temporary 503/429 high demand spikes
+    const modelsToTry = [
+      'gemini-1.5-flash',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash-8b',
+      'gemini-2.0-flash-lite',
+      'gemini-1.5-pro'
+    ];
     let response = null;
     let errorText = '';
 
@@ -232,34 +238,49 @@ router.post('/analyze', async (req, res) => {
       generationConfig: {
         response_mime_type: "application/json",
         temperature: 0.2,
-        maxOutputTokens: 16384
+        maxOutputTokens: 8192
       }
     };
 
     for (const model of modelsToTry) {
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      try {
-        const resAttempt = await fetch(geminiUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestPayload)
-        });
-        if (resAttempt.ok) {
-          response = resAttempt;
-          break;
-        } else {
+      
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const resAttempt = await fetch(geminiUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestPayload)
+          });
+
+          if (resAttempt.ok) {
+            response = resAttempt;
+            break;
+          }
+
           errorText = await resAttempt.text();
-          console.warn(`Model ${model} failed (${resAttempt.status}):`, errorText);
+          console.warn(`Model ${model} attempt ${attempt} failed (${resAttempt.status}):`, errorText);
+
+          // If temporary 503 High Demand or 429 Rate Limit error, wait and retry
+          if ((resAttempt.status === 503 || resAttempt.status === 429 || resAttempt.status >= 500) && attempt < 3) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            continue;
+          } else {
+            break;
+          }
+        } catch (err) {
+          console.warn(`Fetch error for ${model} attempt ${attempt}:`, err);
+          if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 1000));
         }
-      } catch (err) {
-        console.warn(`Attempt failed for model ${model}:`, err);
       }
+
+      if (response) break;
     }
 
     if (!response) {
       return res.status(500).json({
-        error: "Gemini API Request Failed on all model attempts.",
-        details: errorText || "Please verify your GEMINI_API_KEY in .env"
+        error: "Gemini API is currently experiencing high demand. Please wait a few seconds and try again.",
+        details: errorText
       });
     }
 
