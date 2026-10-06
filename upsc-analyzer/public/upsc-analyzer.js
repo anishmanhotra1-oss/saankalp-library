@@ -211,16 +211,51 @@
     }
   }
 
-  function handleFiles(files) {
-    Array.from(files).forEach(file => {
-      if (!file.type.startsWith('image/')) return;
+  function compressImage(file, maxDimension = 1600, quality = 0.82) {
+    return new Promise((resolve) => {
+      const img = new Image();
       const reader = new FileReader();
       reader.onload = (e) => {
-        imageFilesBase64.push(e.target.result);
-        renderImagePreviews();
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            } else {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => resolve(e.target.result);
+        img.src = e.target.result;
       };
+      reader.onerror = () => resolve('');
       reader.readAsDataURL(file);
     });
+  }
+
+  async function handleFiles(files) {
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) continue;
+      try {
+        const compressedB64 = await compressImage(file);
+        if (compressedB64) {
+          imageFilesBase64.push(compressedB64);
+          renderImagePreviews();
+        }
+      } catch (e) {
+        console.warn("[UPSC Analyzer] Compression fallback:", e);
+      }
+    }
   }
 
   function renderImagePreviews() {

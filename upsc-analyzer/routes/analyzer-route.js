@@ -12,23 +12,32 @@ try {
   console.error("Error reading syllabus.json:", err);
 }
 
-// Extract API Key from Environment or .env file
-function getGeminiApiKey() {
-  if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '') {
-    return process.env.GEMINI_API_KEY.trim();
-  }
+// Extract API Keys array from Environment or .env file (Multi-Key Quota Protection)
+function getGeminiApiKeys() {
+  const keys = [];
+
+  ['GEMINI_API_KEY', 'GEMINI_API_KEY_2', 'GEMINI_API_KEY_3', 'DEFAULT_GEMINI_KEY'].forEach(envName => {
+    if (process.env[envName] && process.env[envName].trim() !== '') {
+      const val = process.env[envName].trim();
+      if (!keys.includes(val)) keys.push(val);
+    }
+  });
+
   try {
     const envPath = path.join(__dirname, '../../.env');
     if (fs.existsSync(envPath)) {
       const content = fs.readFileSync(envPath, 'utf8');
-      const match = content.match(/GEMINI_API_KEY\s*=\s*(.*)/);
-      if (match && match[1]) {
-        const extracted = match[1].trim().replace(/^['"]|['"]$/g, '');
-        if (extracted) return extracted;
-      }
+      content.split('\n').forEach(line => {
+        const match = line.match(/^GEMINI_API_KEY(_\d+)?\s*=\s*(.*)/);
+        if (match && match[2]) {
+          const extracted = match[2].trim().replace(/^['"]|['"]$/g, '');
+          if (extracted && !keys.includes(extracted)) keys.push(extracted);
+        }
+      });
     }
   } catch (e) {}
-  return process.env.DEFAULT_GEMINI_KEY || null;
+
+  return keys;
 }
 
 // Helper: Extract YouTube Transcript from public YouTube caption tracks
@@ -242,8 +251,8 @@ function repairTruncatedJson(jsonStr) {
 // POST /api/upsc-analyzer/analyze
 router.post('/analyze', async (req, res) => {
   try {
-    const apiKey = getGeminiApiKey();
-    if (!apiKey) {
+    const apiKeys = getGeminiApiKeys();
+    if (!apiKeys.length) {
       return res.status(400).json({
         error: "Gemini API key is not configured. Please set GEMINI_API_KEY in your environment or .env file."
       });
@@ -326,43 +335,43 @@ router.post('/analyze', async (req, res) => {
     const timeoutId = setTimeout(() => abortController.abort(), 25000);
 
     try {
-      for (const model of modelsToTry) {
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-        
-        try {
-          const resAttempt = await fetch(geminiUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestPayload),
-            signal: abortController.signal
-          });
+      for (const apiKey of apiKeys) {
+        for (const model of modelsToTry) {
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+          
+          try {
+            const resAttempt = await fetch(geminiUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(requestPayload),
+              signal: abortController.signal
+            });
 
-          if (resAttempt.ok) {
-            response = resAttempt;
-            break;
-          }
+            if (resAttempt.ok) {
+              response = resAttempt;
+              break;
+            }
 
-          errorText = await resAttempt.text();
-          console.warn(`[UPSC Analyzer] Model ${model} returned status (${resAttempt.status}):`, errorText.slice(0, 150));
+            errorText = await resAttempt.text();
+            console.warn(`[UPSC Analyzer] Model ${model} returned status (${resAttempt.status}):`, errorText.slice(0, 150));
 
-          // If model doesn't exist (404/400), don't retry same model, immediately jump to next model
-          if (resAttempt.status === 404 || resAttempt.status === 400) {
-            continue;
-          }
+            // If model doesn't exist (404/400), don't retry same model, immediately jump to next model
+            if (resAttempt.status === 404 || resAttempt.status === 400) {
+              continue;
+            }
 
-          // If temporary 503 High Demand or 429 Rate Limit error, wait briefly once and retry next model
-          if (resAttempt.status === 503 || resAttempt.status === 429) {
-            await new Promise(resolve => setTimeout(resolve, 800));
-            continue;
+            // If temporary 503 High Demand or 429 Rate Limit error, try next key/model
+            if (resAttempt.status === 503 || resAttempt.status === 429) {
+              continue;
+            }
+          } catch (err) {
+            if (err.name === 'AbortError') {
+              console.warn("[UPSC Analyzer] Request aborted due to 25s timeout limit.");
+              break;
+            }
+            console.warn(`[UPSC Analyzer] Fetch error for ${model}:`, err.message);
           }
-        } catch (err) {
-          if (err.name === 'AbortError') {
-            console.warn("[UPSC Analyzer] Request aborted due to 25s timeout limit.");
-            break;
-          }
-          console.warn(`[UPSC Analyzer] Fetch error for ${model}:`, err.message);
         }
-
         if (response) break;
       }
     } finally {

@@ -1,5 +1,7 @@
 const express = require('express');
 const http = require('http');
+const https = require('https');
+const fs = require('fs');
 const { Server } = require('socket.io');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
@@ -24,6 +26,8 @@ try {
 } catch (e) {}
 
 const app = express();
+app.set('trust proxy', 1); // Trust Render reverse proxy IP headers
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: "*" }
@@ -56,11 +60,20 @@ app.use((req, res, next) => {
   next();
 });
 
+// Helper: Safely extract client IP behind reverse proxies
+function getClientIp(req) {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded && typeof forwarded === 'string') {
+    return forwarded.split(',')[0].trim();
+  }
+  return req.ip || req.socket.remoteAddress || '127.0.0.1';
+}
+
 // Security Middleware: In-Memory Rate Limiting
 const rateLimitStore = new Map();
 function createRateLimiter(windowMs = 60000, maxRequests = 100, message = 'Too many requests. Please try again later.') {
   return (req, res, next) => {
-    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+    const ip = getClientIp(req);
     const key = `${req.path}_${ip}`;
     const now = Date.now();
 
@@ -90,8 +103,8 @@ setInterval(() => {
 }, 10 * 60 * 1000);
 
 // Apply Rate Limits to sensitive API endpoints
-app.use('/api/auth/', createRateLimiter(60000, 25, 'Too many authentication attempts. Please wait 1 minute.'));
-app.use('/api/upsc-analyzer/analyze', createRateLimiter(60000, 15, 'Analysis limit reached. Please wait a minute before submitting again.'));
+app.use('/api/auth/', createRateLimiter(60000, 30, 'Too many authentication attempts. Please wait 1 minute.'));
+app.use('/api/upsc-analyzer/analyze', createRateLimiter(60000, 30, 'Analysis limit reached. Please wait a minute before submitting again.'));
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -114,15 +127,20 @@ function sanitizeText(str) {
     .replace(/'/g, '&#x27;');
 }
 
-// Self-Ping Keep Alive (Prevents Render Free Tier from Sleeping)
+// Self-Ping Keep Alive (Prevents Render Free Tier from Sleeping - Supports HTTPS)
 const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
 if (RENDER_URL) {
   setInterval(() => {
-    http.get(RENDER_URL, (res) => {
-      console.log(`[Keep-Alive] Pinged ${RENDER_URL} - Status: ${res.statusCode}`);
-    }).on('error', (err) => {
-      console.error('[Keep-Alive] Ping error:', err.message);
-    });
+    try {
+      const client = RENDER_URL.startsWith('https') ? https : http;
+      client.get(RENDER_URL, (res) => {
+        console.log(`[Keep-Alive] Pinged ${RENDER_URL} - Status: ${res.statusCode}`);
+      }).on('error', (err) => {
+        console.error('[Keep-Alive] Ping error:', err.message);
+      });
+    } catch (e) {
+      console.error('[Keep-Alive] Exception during ping:', e.message);
+    }
   }, 10 * 60 * 1000); // Pings every 10 minutes to keep server awake
 }
 
