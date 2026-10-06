@@ -192,22 +192,96 @@ function repairTruncatedJson(jsonStr) {
     return JSON.parse(str);
   } catch (e) {}
 
-  // Remove trailing content after the last closing brace if any extra text exists
-  const firstBrace = str.indexOf('{');
-  const lastBrace = str.lastIndexOf('}');
-  if (firstBrace !== -1 && lastBrace > firstBrace) {
-    try {
-      return JSON.parse(str.slice(firstBrace, lastBrace + 1));
-    } catch (e) {}
+  // 1. Extract all complete individual article objects from the "articles" array if available
+  const articlesMatch = str.match(/"articles"\s*:\s*\[([\s\S]*)/);
+  if (articlesMatch) {
+    const rawArticlesContent = articlesMatch[1];
+    const validArticles = [];
+    let depth = 0;
+    let startIdx = -1;
+    let inStr = false;
+    let esc = false;
+
+    for (let i = 0; i < rawArticlesContent.length; i++) {
+      const ch = rawArticlesContent[i];
+      if (ch === '\\' && !esc) {
+        esc = true;
+        continue;
+      }
+      if (ch === '"' && !esc) {
+        inStr = !inStr;
+      } else if (!inStr) {
+        if (ch === '{') {
+          if (depth === 0) startIdx = i;
+          depth++;
+        } else if (ch === '}') {
+          depth--;
+          if (depth === 0 && startIdx !== -1) {
+            const objStr = rawArticlesContent.slice(startIdx, i + 1);
+            try {
+              validArticles.push(JSON.parse(objStr));
+            } catch (err) {
+              try {
+                const cleanedObjStr = sanitizeControlCharsInString(objStr);
+                validArticles.push(JSON.parse(cleanedObjStr));
+              } catch (e2) {}
+            }
+            startIdx = -1;
+          }
+        }
+      }
+      esc = false;
+    }
+
+    if (validArticles.length > 0) {
+      return {
+        inventory_count: validArticles.length,
+        articles: validArticles
+      };
+    }
   }
+
+  // Helper: Sanitize raw control characters inside quotes only
+  function sanitizeControlCharsInString(raw) {
+    let out = '';
+    let inS = false;
+    let esc = false;
+    for (let i = 0; i < raw.length; i++) {
+      const c = raw[i];
+      if (c === '\\' && !esc) {
+        esc = true;
+        out += c;
+        continue;
+      }
+      if (c === '"' && !esc) {
+        inS = !inS;
+        out += c;
+      } else if (inS) {
+        if (c === '\n') out += '\\n';
+        else if (c === '\r') out += '\\r';
+        else if (c === '\t') out += '\\t';
+        else if (c.charCodeAt(0) < 32) out += ' ';
+        else out += c;
+      } else {
+        out += c;
+      }
+      esc = false;
+    }
+    return out;
+  }
+
+  const sanitizedStr = sanitizeControlCharsInString(str);
+  try {
+    return JSON.parse(sanitizedStr);
+  } catch (e) {}
 
   // Bracket balance repair algorithm
   let escaped = false;
   let inString = false;
   let stack = [];
 
-  for (let i = 0; i < str.length; i++) {
-    const char = str[i];
+  for (let i = 0; i < sanitizedStr.length; i++) {
+    const char = sanitizedStr[i];
     if (char === '\\' && !escaped) {
       escaped = true;
       continue;
@@ -224,25 +298,28 @@ function repairTruncatedJson(jsonStr) {
     escaped = false;
   }
 
+  let repairedStr = sanitizedStr;
   if (inString) {
-    if (str.endsWith('\\')) str = str.slice(0, -1);
-    str += '"';
+    if (repairedStr.endsWith('\\')) repairedStr = repairedStr.slice(0, -1);
+    repairedStr += '"';
   }
 
-  str = str.replace(/,\s*$/, '');
+  repairedStr = repairedStr.replace(/,\s*$/, '');
 
   while (stack.length > 0) {
     const last = stack.pop();
-    str += (last === '{' ? '}' : ']');
+    repairedStr += (last === '{' ? '}' : ']');
   }
 
   try {
-    return JSON.parse(str);
+    return JSON.parse(repairedStr);
   } catch (e) {
-    console.warn("Attempting last valid object regex slice repair...", e.message);
-    const match = str.match(/[\s\S]*\}\s*\]\s*\}/);
+    console.warn("[UPSC Analyzer] Attempting last valid object regex slice repair...", e.message);
+    const match = repairedStr.match(/\{[\s\S]*"articles"\s*:\s*\[[\s\S]*\}\s*\]/);
     if (match) {
-      return JSON.parse(match[0]);
+      try {
+        return JSON.parse(match[0] + '}');
+      } catch (err2) {}
     }
     throw e;
   }
@@ -326,7 +403,7 @@ router.post('/analyze', async (req, res) => {
       generationConfig: {
         response_mime_type: "application/json",
         temperature: 0.2,
-        maxOutputTokens: 8192
+        maxOutputTokens: 16384
       }
     };
 
