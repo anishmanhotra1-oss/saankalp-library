@@ -277,19 +277,33 @@
     })
       .then(async res => {
         const contentType = res.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
+        if (res.ok && contentType && contentType.includes("application/json")) {
           return res.json();
         } else {
-          const text = await res.text();
-          throw new Error(`Server Error (${res.status}): ${text.slice(0, 200)}`);
+          let errorMsg = `Server Response Error (${res.status})`;
+          try {
+            if (contentType && contentType.includes("application/json")) {
+              const errJson = await res.json();
+              errorMsg = errJson.error || errJson.details || errorMsg;
+            } else {
+              const text = await res.text();
+              if (res.status === 502 || res.status === 504 || text.includes("<title>502") || text.includes("<title>504")) {
+                errorMsg = "Server connection timed out or is warming up on Render. Please click 'Analyze' again in a few seconds.";
+              } else {
+                const cleanText = text.replace(/<[^>]*>/g, '').trim().slice(0, 150);
+                errorMsg = `Server Error (${res.status}): ${cleanText || 'Unexpected response'}`;
+              }
+            }
+          } catch (e) {}
+          throw new Error(errorMsg);
         }
       })
       .then(data => {
         if (loadingBox) loadingBox.style.display = 'none';
         if (submitBtn) submitBtn.disabled = false;
 
-        if (data.error) {
-          alert(`Analysis Error: ${data.error}\n${data.details ? 'Details: ' + data.details : ''}`);
+        if (!data || data.error) {
+          alert(`Analysis Notice: ${data?.error || 'Analysis could not be completed.'}\n${data?.details ? 'Details: ' + data.details : ''}`);
           return;
         }
 
@@ -300,7 +314,7 @@
       .catch(err => {
         if (loadingBox) loadingBox.style.display = 'none';
         if (submitBtn) submitBtn.disabled = false;
-        alert(`Request error: ${err.message || err}`);
+        alert(`Analysis Request: ${err.message || err}`);
       });
   }
 

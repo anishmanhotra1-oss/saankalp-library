@@ -17,7 +17,6 @@ function getGeminiApiKey() {
   if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '') {
     return process.env.GEMINI_API_KEY.trim();
   }
-  // Try reading .env manually if process.env isn't populated
   try {
     const envPath = path.join(__dirname, '../../.env');
     if (fs.existsSync(envPath)) {
@@ -30,6 +29,63 @@ function getGeminiApiKey() {
     }
   } catch (e) {}
   return process.env.DEFAULT_GEMINI_KEY || null;
+}
+
+// Helper: Extract YouTube Transcript from public YouTube caption tracks
+async function fetchYouTubeTranscript(youtubeUrl) {
+  if (!youtubeUrl) return null;
+  try {
+    const videoIdMatch = youtubeUrl.match(/(?:v=|\/embed\/|\/v\/|youtu\.be\/|\/shorts\/)([a-zA-Z0-9_-]{11})/);
+    if (!videoIdMatch) return null;
+    const videoId = videoIdMatch[1];
+
+    const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    const res = await fetch(watchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9'
+      }
+    });
+    const html = await res.text();
+
+    const playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});/s);
+    if (!playerResponseMatch) return null;
+
+    const playerResponse = JSON.parse(playerResponseMatch[1]);
+    const captionTracks = playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+
+    if (!captionTracks || !captionTracks.length) return null;
+
+    // Prefer English or Hindi or first available track
+    const track = captionTracks.find(t => t.languageCode === 'en' || t.languageCode === 'hi') || captionTracks[0];
+    if (!track || !track.baseUrl) return null;
+
+    const trackRes = await fetch(track.baseUrl + '&fmt=json3');
+    if (!trackRes.ok) return null;
+
+    const trackData = await trackRes.json();
+    const events = trackData.events || [];
+    let transcriptLines = [];
+
+    for (const ev of events) {
+      if (ev.segs) {
+        const line = ev.segs.map(s => s.utf8).join('').trim();
+        if (line && line !== '\n') {
+          const startSec = Math.floor((ev.tStartMs || 0) / 1000);
+          const mins = Math.floor(startSec / 60);
+          const secs = String(startSec % 60).padStart(2, '0');
+          transcriptLines.push(`[${mins}:${secs}] ${line}`);
+        }
+      }
+    }
+    
+    const fullTranscript = transcriptLines.join(' ');
+    // Limit transcript text length to prevent overflowing API limits (~15,000 words max)
+    return fullTranscript.length > 50000 ? fullTranscript.slice(0, 50000) + '...' : fullTranscript;
+  } catch (err) {
+    console.warn("[UPSC Analyzer] Auto transcript fetch notice:", err.message);
+    return null;
+  }
 }
 
 // Build Prompt with Syllabus context
@@ -119,12 +175,24 @@ ${extraText ? `Additional input details:\n${extraText}` : ''}
 
 // Helper function to repair truncated or incomplete JSON strings from Gemini LLM
 function repairTruncatedJson(jsonStr) {
+  if (!jsonStr || typeof jsonStr !== 'string') throw new Error("Empty response from AI model.");
   let str = jsonStr.replace(/```json/gi, '').replace(/```/g, '').trim();
-  
+
+  // Try direct parse first
   try {
     return JSON.parse(str);
   } catch (e) {}
 
+  // Remove trailing content after the last closing brace if any extra text exists
+  const firstBrace = str.indexOf('{');
+  const lastBrace = str.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    try {
+      return JSON.parse(str.slice(firstBrace, lastBrace + 1));
+    } catch (e) {}
+  }
+
+  // Bracket balance repair algorithm
   let escaped = false;
   let inString = false;
   let stack = [];
@@ -194,10 +262,18 @@ router.post('/analyze', async (req, res) => {
 
     if (type === 'youtube') {
       let extraInfo = `YouTube Source URL: ${youtubeUrl || 'Manual Transcript Provided'}`;
+      
+      let fetchedTranscript = null;
+      if (youtubeUrl && !manualTranscript) {
+        fetchedTranscript = await fetchYouTubeTranscript(youtubeUrl);
+      }
+
       if (manualTranscript) {
         extraInfo += `\n\nUser Provided Transcript Content:\n${manualTranscript}`;
+      } else if (fetchedTranscript) {
+        extraInfo += `\n\nAuto-Extracted Video Transcript Content:\n${fetchedTranscript}`;
       } else if (youtubeUrl) {
-        extraInfo += `\n\nPlease analyze the content of this YouTube daily newspaper analysis video in full detail. Ensure no topic/article is missed.`;
+        extraInfo += `\n\nNote: Could not auto-fetch video captions. Analyze based on available newspaper context in the video description/title.`;
       }
       
       const promptText = buildPrompt('youtube', extraInfo);
@@ -224,14 +300,15 @@ router.post('/analyze', async (req, res) => {
       contents.push({ parts });
     }
 
-    // Call Gemini REST API with Model Fallback & Retry Logic using verified active Google Gemini models
+    // Call Gemini REST API with Verified Official Active Models (Fast Fallback Order)
     const modelsToTry = [
-      'gemini-3.6-flash',
-      'gemini-3.1-flash-lite',
-      'gemini-flash-latest',
-      'gemini-3.5-flash',
-      'gemini-3.8-flash'
+      'gemini-2.5-flash',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-1.5-pro',
+      'gemini-2.0-flash-lite'
     ];
+    
     let response = null;
     let errorText = '';
 
@@ -244,15 +321,20 @@ router.post('/analyze', async (req, res) => {
       }
     };
 
-    for (const model of modelsToTry) {
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      
-      for (let attempt = 1; attempt <= 3; attempt++) {
+    // Render 25-Second Abort Controller Guard to prevent HTTP 502 Proxy Timeouts
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), 25000);
+
+    try {
+      for (const model of modelsToTry) {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        
         try {
           const resAttempt = await fetch(geminiUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestPayload)
+            body: JSON.stringify(requestPayload),
+            signal: abortController.signal
           });
 
           if (resAttempt.ok) {
@@ -261,28 +343,36 @@ router.post('/analyze', async (req, res) => {
           }
 
           errorText = await resAttempt.text();
-          console.warn(`Model ${model} attempt ${attempt} failed (${resAttempt.status}):`, errorText);
+          console.warn(`[UPSC Analyzer] Model ${model} returned status (${resAttempt.status}):`, errorText.slice(0, 150));
 
-          // If temporary 503 High Demand or 429 Rate Limit error, wait and retry
-          if ((resAttempt.status === 503 || resAttempt.status === 429 || resAttempt.status >= 500) && attempt < 3) {
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          // If model doesn't exist (404/400), don't retry same model, immediately jump to next model
+          if (resAttempt.status === 404 || resAttempt.status === 400) {
             continue;
-          } else {
-            break;
+          }
+
+          // If temporary 503 High Demand or 429 Rate Limit error, wait briefly once and retry next model
+          if (resAttempt.status === 503 || resAttempt.status === 429) {
+            await new Promise(resolve => setTimeout(resolve, 800));
+            continue;
           }
         } catch (err) {
-          console.warn(`Fetch error for ${model} attempt ${attempt}:`, err);
-          if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 1000));
+          if (err.name === 'AbortError') {
+            console.warn("[UPSC Analyzer] Request aborted due to 25s timeout limit.");
+            break;
+          }
+          console.warn(`[UPSC Analyzer] Fetch error for ${model}:`, err.message);
         }
-      }
 
-      if (response) break;
+        if (response) break;
+      }
+    } finally {
+      clearTimeout(timeoutId);
     }
 
     if (!response) {
-      return res.status(500).json({
-        error: "Gemini API is currently experiencing high demand. Please wait a few seconds and try again.",
-        details: errorText
+      return res.status(503).json({
+        error: "AI service is currently busy or model unavailable. Please try again in a few seconds.",
+        details: errorText || "Request timeout or API response issue"
       });
     }
 
@@ -298,7 +388,7 @@ router.post('/analyze', async (req, res) => {
     try {
       parsedResult = repairTruncatedJson(rawJsonText);
     } catch (parseErr) {
-      console.warn("JSON repair fallback failed:", parseErr);
+      console.warn("[UPSC Analyzer] JSON repair fallback failed:", parseErr.message);
       return res.status(500).json({
         error: "Failed to parse analysis JSON. The response was too large or malformed.",
         details: parseErr.message
@@ -325,3 +415,4 @@ router.get('/syllabus', (req, res) => {
 });
 
 module.exports = router;
+
