@@ -300,13 +300,13 @@ router.post('/analyze', async (req, res) => {
       contents.push({ parts });
     }
 
-    // Call Gemini REST API with Verified Official Active Models (Fast Fallback Order)
+    // Call Gemini REST API with Verified Active Models (Tested order: 3.5-flash-lite, 3.8-flash, 3.1-flash-lite)
     const modelsToTry = [
-      'gemini-2.5-flash',
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-1.5-pro',
-      'gemini-2.0-flash-lite'
+      'gemini-3.5-flash-lite',
+      'gemini-3.8-flash',
+      'gemini-3.1-flash-lite',
+      'gemini-3.6-flash',
+      'gemini-3.7-flash'
     ];
     
     let response = null;
