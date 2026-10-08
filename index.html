@@ -1922,14 +1922,23 @@ socket.on('seat_updated', (updatedSeats) => {
 
 socket.on('camera_updated', (cams) => {
   activeCameras = cams || {};
+  const activeUids = new Set(Object.values(activeCameras).map(c => c.uid));
+  Object.keys(remoteFrames).forEach(fUid => {
+    if (!activeUids.has(fUid) && fUid !== uid) {
+      delete remoteFrames[fUid];
+    }
+  });
   renderCameraGrid();
 });
 
 socket.on('video_frame_received', ({ socketId, uid: frameUid, frameData }) => {
+  if (!frameData || !frameUid) return;
   remoteFrames[frameUid] = frameData;
   const imgEl = document.getElementById(`remoteVid_${frameUid}`);
   if (imgEl) {
     imgEl.src = frameData;
+  } else {
+    renderCameraGrid();
   }
 });
 
@@ -2292,7 +2301,7 @@ function renderCameraGrid(){
    const tag = liveTag(s.uid);
    const displayName = s.uid === uid ? "You" : nm(s.uid);
 
-   if (s.uid === uid && cameraOn && localStream) {
+   if (s.uid === uid && cameraOn) {
      return `<div class="cam" id="myCamContainer" onclick="openAspirantProfile('${s.uid}')">
        <video id="myCamVideo" autoplay muted playsinline></video>
        <div class="cam-foot">
@@ -2301,7 +2310,7 @@ function renderCameraGrid(){
        </div>
      </div>`;
    }
-   if (remoteFrames[s.uid]) {
+   if (isCamOn && remoteFrames[s.uid]) {
      return `<div class="cam" onclick="openAspirantProfile('${s.uid}')">
        <img id="remoteVid_${s.uid}" src="${remoteFrames[s.uid]}">
        <div class="cam-foot">
@@ -2314,7 +2323,7 @@ function renderCameraGrid(){
      <div class="cam-screen" id="remoteScreen_${s.uid}">${avatar(s.uid,"avatar")}</div>
      <div class="cam-foot">
        <span class="cam-name">${displayName}</span>
-       ${tag || `<span class="cam-status">${isCamOn ? '● Live' : 'Studying'}</span>`}
+       ${tag || `<span class="cam-status" style="${isCamOn ? 'color:#2563eb; font-weight:700;' : ''}">${isCamOn ? '● Live (connecting...)' : 'Studying'}</span>`}
      </div>
    </div>`;
  });
@@ -2528,6 +2537,28 @@ function openStudy(){go("study")}
 if ($("#newRoom")) $("#newRoom").onclick=createRoom;
 
 // WebRTC & Cross-Device Frame Snapshot Broadcast
+let hiddenLocalVideo = null;
+
+function setupHiddenLocalVideo(stream) {
+  if (!hiddenLocalVideo) {
+    hiddenLocalVideo = document.createElement("video");
+    hiddenLocalVideo.autoplay = true;
+    hiddenLocalVideo.muted = true;
+    hiddenLocalVideo.playsInline = true;
+    hiddenLocalVideo.style.display = "none";
+    document.body.appendChild(hiddenLocalVideo);
+  }
+  hiddenLocalVideo.srcObject = stream;
+  hiddenLocalVideo.play().catch(e => console.log("Hidden video play info:", e));
+}
+
+function stopHiddenLocalVideo() {
+  if (hiddenLocalVideo) {
+    try { hiddenLocalVideo.pause(); } catch(e){}
+    hiddenLocalVideo.srcObject = null;
+  }
+}
+
 async function enableCamera() {
   try {
     const constraints = {
@@ -2537,6 +2568,7 @@ async function enableCamera() {
     localStream = await navigator.mediaDevices.getUserMedia(constraints);
     cameraOn = true;
 
+    setupHiddenLocalVideo(localStream);
     socket.emit('toggle_camera', { uid, active: true, name: nm(uid) });
     startFrameStreaming();
 
@@ -2562,13 +2594,16 @@ function startFrameStreaming() {
 
   videoFrameInterval = setInterval(() => {
     if (!cameraOn || !localStream) return;
-    const myVid = document.getElementById("myCamVideo");
-    if (myVid && myVid.readyState === 4) {
-      ctx.drawImage(myVid, 0, 0, canvas.width, canvas.height);
+    const vid = (hiddenLocalVideo && hiddenLocalVideo.readyState >= 2 && hiddenLocalVideo.videoWidth > 0)
+      ? hiddenLocalVideo
+      : document.getElementById("myCamVideo");
+
+    if (vid && vid.readyState >= 2) {
+      ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
       const frameData = canvas.toDataURL("image/jpeg", 0.5);
       socket.emit('video_frame', { uid, frameData });
     }
-  }, 500);
+  }, 400);
 }
 
 function disableCamera() {
@@ -2576,15 +2611,18 @@ function disableCamera() {
     clearInterval(videoFrameInterval);
     videoFrameInterval = null;
   }
-  if(localStream) {
+  stopHiddenLocalVideo();
+  if (localStream) {
     localStream.getTracks().forEach(t => t.stop());
     localStream = null;
   }
   cameraOn = false;
+  delete remoteFrames[uid];
   socket.emit('toggle_camera', { uid, active: false, name: nm(uid) });
   toast("Camera / Screen turned off");
   renderCameraGrid();
   $("#cameraToggle")?.classList.remove("active");
+  $("#shareScreenBtn")?.classList.remove("active");
 }
 
 async function enableScreenShare() {
@@ -2613,6 +2651,7 @@ async function enableScreenShare() {
 
     localStream = stream;
     cameraOn = true;
+    setupHiddenLocalVideo(localStream);
 
     if (localStream.getVideoTracks()[0]) {
       localStream.getVideoTracks()[0].onended = () => {

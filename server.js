@@ -500,7 +500,11 @@ io.on('connection', (socket) => {
       const dateKey = getLocalDateKey(end);
       const uid = seat.uid;
       delete activeSeats[seatId];
-      delete activeCameras[socket.id];
+      for (const sId in activeCameras) {
+        if (activeCameras[sId].uid === uid || sId === socket.id) {
+          delete activeCameras[sId];
+        }
+      }
       io.emit('seat_updated', activeSeats);
       io.emit('camera_updated', activeCameras);
 
@@ -519,11 +523,14 @@ io.on('connection', (socket) => {
   });
 
   socket.on('toggle_camera', ({ uid, active, isScreen, name }) => {
+    for (const sId in activeCameras) {
+      if (activeCameras[sId].uid === uid || sId === socket.id) {
+        delete activeCameras[sId];
+      }
+    }
     if (active) {
       activeCameras[socket.id] = { socketId: socket.id, uid, cameraOn: !isScreen, screenOn: !!isScreen };
       addNotification(`📹 ${name || 'Aspirant'} turned on their ${isScreen ? 'screen share' : 'study camera'}`);
-    } else {
-      delete activeCameras[socket.id];
     }
     io.emit('camera_updated', activeCameras);
   });
