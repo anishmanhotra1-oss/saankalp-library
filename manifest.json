@@ -1,7 +1,7 @@
 {
-  "name": "SAANKALP — Intelligent Study Hub",
-  "short_name": "SAANKALP",
-  "description": "Dedicated Virtual Library & Serious Study Space for Aspirants",
+  "name": "LibNexa — Intelligent Study Hub & Virtual Library",
+  "short_name": "LibNexa",
+  "description": "LibNexa: Intelligent Virtual Library & Focused Digital Study Workspace",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
@@ -10,10 +10,28 @@
   "scope": "/",
   "icons": [
     {
-      "src": "/logo.svg",
-      "sizes": "192x192 512x512",
-      "type": "image/svg+xml",
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ]
 }

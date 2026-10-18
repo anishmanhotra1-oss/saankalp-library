@@ -614,7 +614,7 @@
 
     let html = `
       <div style="text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 16px; margin-bottom: 24px;">
-        <h1 style="color: #2563eb; font-size: 22px; margin: 0 0 6px 0;">🦉 SAANKALP UPSC Newspaper Analysis</h1>
+        <h1 style="color: #2563eb; font-size: 22px; margin: 0 0 6px 0;">🦉 LibNexa UPSC Newspaper Analysis</h1>
         <p style="color: #64748b; font-size: 13px; margin: 0;">High-Yield Exam Notes & Syllabus Mapping · ${dateStr}</p>
       </div>
     `;

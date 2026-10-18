@@ -1,7 +1,7 @@
 @echo off
-title SAANKALP Virtual Library Server
+title LibNexa Virtual Library Server
 echo ===================================================
-echo 🚀 Starting SAANKALP Virtual Library Local Server...
+echo 🚀 Starting LibNexa Virtual Library Local Server...
 echo ===================================================
 cd /d "%~dp0"
 node server.js

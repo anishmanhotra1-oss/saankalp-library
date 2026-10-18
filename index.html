@@ -3,15 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>SAANKALP — Virtual Library</title>
+<title>LibNexa — Virtual Library</title>
 <!-- Favicon SVG & PWA Web App Manifest -->
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" href="/favicon.png">
 <link rel="icon" type="image/svg+xml" href="/logo.svg">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#2563eb">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="SAANKALP">
-<link rel="apple-touch-icon" href="/logo.svg">
+<meta name="apple-mobile-web-app-title" content="LibNexa">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <!-- UPSC Newspaper Analyzer Scoped CSS -->
 <link rel="stylesheet" href="/upsc-analyzer/css/upsc-analyzer.css">
 <!-- Socket.IO Client -->
@@ -39,7 +42,7 @@ body{overflow:hidden}
 
 /* SIDEBAR & INLINE SIDEBAR MENU */
 .sidebar{width:78px;background:#ffffff;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:14px 8px;gap:8px;z-index:20;box-shadow:2px 0 10px rgba(0,0,0,0.02);transition:width 0.3s ease}
-.brand-img{width:48px;height:48px;border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,0.12);margin-bottom:15px;object-fit:cover;cursor:pointer;}
+.brand-img{width:48px;height:48px;border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,0.12);margin-bottom:15px;object-fit:contain;background:#ffffff;cursor:pointer;}
 .nav{width:100%;background:transparent;border:0;border-left:3px solid transparent;border-radius:10px;padding:10px 3px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px;transition:.2s}
 .nav span{font-size:10px}.nav .ico{font-size:19px}
 .nav:hover{background:#f1f5f9;color:var(--text)}
@@ -80,7 +83,7 @@ body{overflow:hidden}
 .landing-view{min-height:100vh;background:#ffffff;color:#0f172a;display:flex;flex-direction:column;z-index:30;overflow-y:auto;position:relative;}
 .landing-navbar{position:sticky;top:0;z-index:100;backdrop-filter:blur(16px);background:rgba(255,255,255,0.92);display:flex;align-items:center;justify-content:space-between;padding:16px 40px;border-bottom:1px solid #e2e8f0;color:#0f172a;}
 .landing-logo{display:flex;align-items:center;gap:12px;}
-.landing-logo img{width:42px;height:42px;border-radius:10px;box-shadow:0 4px 12px rgba(37,99,235,0.12);}
+.landing-logo img{width:42px;height:42px;border-radius:10px;box-shadow:0 4px 12px rgba(37,99,235,0.12);object-fit:contain;background:#ffffff;}
 .landing-logo h2{font-size:20px;margin:0;letter-spacing:-0.5px;color:#0f172a;}
 .landing-logo h2 span{color:#2563eb;}
 .landing-navbar-actions{display:flex;gap:8px;align-items:center;}
@@ -519,6 +522,197 @@ body{overflow:hidden}
   .floating-chat-btn{right:14px;bottom:74px;padding:9px 15px;font-size:13px;}
   .modal{width:min(440px, 94vw);padding:18px 14px;border-radius:16px;}
 }
+
+/* ENHANCED RESPONSIVE SYSTEM FOR ALL SCREENS (MOBILE, TABLET, DESKTOP, FOLDABLES) */
+:root {
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+
+/* Ensure smooth touch scrolling on iOS/Android */
+html, body {
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
+}
+
+/* Modal Responsive Polish */
+.modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 10001;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
+}
+.modal-backdrop.active {
+  display: flex !important;
+}
+.modal {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 24px 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  max-height: calc(90vh - var(--safe-bottom));
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* Bottom bar safe-area & ultra-compact responsiveness */
+.bottom-bar {
+  padding-bottom: var(--safe-bottom) !important;
+  height: calc(58px + var(--safe-bottom)) !important;
+}
+.bottom-bar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Small Screens & Compact Phones (<= 480px) */
+@media (max-width: 480px) {
+  .landing-navbar {
+    padding: 8px 10px !important;
+    gap: 6px !important;
+  }
+  .landing-logo {
+    gap: 8px !important;
+  }
+  .landing-logo img {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  .landing-logo h2 {
+    font-size: 15px !important;
+    font-weight: 800 !important;
+  }
+  .landing-navbar-actions {
+    gap: 4px !important;
+  }
+  .landing-navbar-actions .btn {
+    padding: 5px 8px !important;
+    font-size: 11px !important;
+    letter-spacing: -0.2px;
+  }
+  .landing-hero {
+    padding: 24px 12px 20px 12px !important;
+  }
+  .landing-hero h1 {
+    font-size: clamp(23px, 7vw, 29px) !important;
+    line-height: 1.2 !important;
+  }
+  .landing-hero p {
+    font-size: 13.5px !important;
+    line-height: 1.5 !important;
+  }
+  .landing-hero-actions {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+  .landing-hero-actions button {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 12px !important;
+    font-size: 13.5px !important;
+  }
+  .landing-features {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .subpage-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .subpage-banner {
+    padding: 16px 14px !important;
+  }
+  .subpage-banner h2 {
+    font-size: 18px !important;
+  }
+  .landing-footer {
+    padding: 24px 14px calc(24px + var(--safe-bottom)) 14px !important;
+  }
+  .session h2#bigTimer {
+    font-size: clamp(30px, 9vw, 42px) !important;
+  }
+  .peer-ranking-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 4px !important;
+  }
+  .peer-stat-box {
+    padding: 6px 2px !important;
+  }
+  .peer-stat-box small {
+    font-size: 7.5px !important;
+  }
+  .peer-stat-box div {
+    font-size: 12px !important;
+  }
+  .grid2 {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 4px !important;
+  }
+  .card.stat {
+    padding: 8px 3px !important;
+  }
+  .card.stat label {
+    font-size: 8.5px !important;
+  }
+  .card.stat .num {
+    font-size: 13px !important;
+  }
+  .bottom-bar button {
+    min-width: 38px !important;
+    max-width: 52px !important;
+    padding: 2px 1px !important;
+  }
+  .bottom-bar button span {
+    font-size: 8.5px !important;
+  }
+  .bottom-bar button .ico-svg {
+    width: 15px !important;
+    height: 15px !important;
+  }
+  .room-head {
+    padding: 6px 8px !important;
+    gap: 4px !important;
+  }
+  .room-head img {
+    width: 28px !important;
+    height: 28px !important;
+  }
+  .room-title b {
+    font-size: 11.5px !important;
+  }
+  .room-title small {
+    font-size: 9.5px !important;
+  }
+}
+
+/* Tablet Optimizations (600px - 1024px) */
+@media (min-width: 601px) and (max-width: 1024px) {
+  .landing-hero h1 {
+    font-size: clamp(32px, 5vw, 42px) !important;
+  }
+  .landing-features {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .subpage-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .camera-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -526,7 +720,7 @@ body{overflow:hidden}
 
 <!-- SIDEBAR -->
 <aside class="sidebar" id="appSidebar" style="display:none;">
-  <img src="/logo.svg" class="brand-img" title="SAANKALP Intelligent Study Hub" onclick="go('home')">
+  <img src="/logo.png" class="brand-img" title="LibNexa Intelligent Study Hub" alt="LibNexa Logo" onclick="go('home')">
   <button class="nav active" data-view="home" title="Dashboard"><span class="ico"><svg class="ico-svg" viewBox="0 0 24 24"><rect x="2" y="10" width="20" height="3" rx="1"/><path d="M4 13v8M20 13v8"/><path d="M7 4h10a1 1 0 0 1 1 1v5H6V5a1 1 0 0 1 1-1z"/><rect x="6" y="14" width="12" height="2" rx="0.5"/><path d="M8 16v5M16 16v5"/></svg></span><span>Library</span></button>
   <button class="nav" data-view="study" title="Study Rooms"><span class="ico"><svg class="ico-svg" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span><span>Study</span></button>
   <button class="nav" data-view="analyzer" title="UPSC Newspaper Analyzer"><span class="ico"><svg class="ico-svg" viewBox="0 0 24 24"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Z"/><path d="M18 14h-8"/><path d="M18 18h-8"/><path d="M18 10h-8"/><path d="M4 22a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/></svg></span><span>Analyzer</span></button>
@@ -609,7 +803,7 @@ body{overflow:hidden}
 <div class="floating-chat-box" id="floatingChatBox">
   <div class="chat-box-head">
     <div style="display:flex; align-items:center; gap:8px;">
-      <img src="/logo.svg" style="width:24px; height:24px; border-radius:6px;">
+      <img src="/logo.png" style="width:24px; height:24px; border-radius:6px; object-fit:contain; background:#ffffff;" alt="LibNexa">
       <h4 id="chatBoxTitle">💬 Library Chat</h4>
     </div>
     <button class="close" id="closeFloatingChatBtn" style="width:28px; height:28px;" title="Close Chat">✕</button>
@@ -646,8 +840,8 @@ body{overflow:hidden}
   <!-- STICKY TOP NAVBAR -->
   <div class="landing-navbar">
     <div class="landing-logo">
-      <img src="/logo.svg" alt="SAANKALP Logo">
-      <h2>SAANKALP <span>— Intelligent Study Hub</span></h2>
+      <img src="/logo.png" alt="LibNexa Logo" style="object-fit:contain; background:#ffffff;">
+      <h2>LibNexa <span>— Intelligent Study Hub</span></h2>
     </div>
     <div class="landing-navbar-actions">
       <button class="btn primary" id="btnLandingGetStartedNav" onclick="openAuthModal()">Get Started ➔</button>
@@ -688,14 +882,14 @@ body{overflow:hidden}
   <div class="landing-subpage" id="landingEcosystemSection">
     <div class="subpage-banner">
       <div style="display:flex; align-items:center; gap:16px; margin-bottom:12px; flex-wrap:wrap;">
-        <img src="/logo.svg" alt="SAANKALP Logo">
+        <img src="/logo.png" alt="LibNexa Logo" style="object-fit:contain; background:#ffffff;">
         <div>
-          <h2>The SAANKALP Virtual Library Ecosystem</h2>
+          <h2>The LibNexa Virtual Library Ecosystem</h2>
           <p class="subhead">Designed specifically for competitive exam warriors</p>
         </div>
       </div>
       <p class="desc">
-        Studying alone for UPSC, JEE, NEET, GATE, or State PSC can lead to burnout. SAANKALP creates an authentic library atmosphere right on your laptop or phone — complete with live desk seating, silent peer accountability, and real-time study streaks.
+        Studying alone for UPSC, JEE, NEET, GATE, or State PSC can lead to burnout. LibNexa creates an authentic library atmosphere right on your laptop or phone — complete with live desk seating, silent peer accountability, and real-time study streaks.
       </p>
     </div>
 
@@ -722,7 +916,7 @@ body{overflow:hidden}
   <footer class="landing-footer">
     <div class="landing-footer-container">
       <div class="footer-brand">
-        <h3><img src="/logo.svg" style="width:36px; height:36px; border-radius:10px;" alt="SAANKALP"> SAANKALP</h3>
+        <h3><img src="/logo.png" style="width:36px; height:36px; border-radius:10px; object-fit:contain; background:#ffffff;" alt="LibNexa"> LibNexa</h3>
         <p>Dedicated Virtual Library & Real-Time Quiet Study Workspace for Serious Competitive Exam Aspirants Across India.</p>
         <div style="display:flex; gap:10px;">
           <span style="background:#1e293b; border:1px solid #334155; color:#38bdf8; padding:6px 14px; border-radius:20px; font-size:12px; font-weight:700;">🇮🇳 Made for Indian Aspirants</span>
@@ -763,11 +957,11 @@ body{overflow:hidden}
     </div>
 
     <div class="footer-bottom">
-      <div>© 2026 SAANKALP Intelligent Study Hub. All rights reserved.</div>
+      <div>© 2026 LibNexa Intelligent Study Hub. All rights reserved.</div>
       <div style="display:flex; gap:20px;">
-        <a href="#" onclick="toast('SAANKALP maintains strict privacy for all study sessions.'); return false;" style="color:#64748b; text-decoration:none;">Privacy Policy</a>
-        <a href="#" onclick="toast('SAANKALP Virtual Library Terms of Service'); return false;" style="color:#64748b; text-decoration:none;">Terms of Service</a>
-        <a href="#" onclick="toast('Contact Support: support@saankalp.org'); return false;" style="color:#64748b; text-decoration:none;">Support</a>
+        <a href="#" onclick="toast('LibNexa maintains strict privacy for all study sessions.'); return false;" style="color:#64748b; text-decoration:none;">Privacy Policy</a>
+        <a href="#" onclick="toast('LibNexa Virtual Library Terms of Service'); return false;" style="color:#64748b; text-decoration:none;">Terms of Service</a>
+        <a href="#" onclick="toast('Contact Support: support@libnexa.org'); return false;" style="color:#64748b; text-decoration:none;">Support</a>
       </div>
     </div>
   </footer>
@@ -777,7 +971,7 @@ body{overflow:hidden}
 <section class="view" id="homeView" hidden>
 <div class="container">
   <div class="topbar">
-    <div class="title"><h1 id="welcomeUserTitle">Good day, Aspirant</h1><p>SAANKALP Intelligent Study Hub</p></div>
+    <div class="title"><h1 id="welcomeUserTitle">Good day, Aspirant</h1><p>LibNexa Intelligent Study Hub</p></div>
     <div style="display:flex; align-items:center; gap:10px;">
       <button class="small-btn" id="notificationBellBtn" title="Library Notifications" style="position:relative; padding:8px 12px; font-size:16px; border-radius:12px;">
         🔔 <span id="notificationBadge" style="position:absolute; top:-4px; right:-4px; background:#ef4444; color:#fff; border-radius:10px; font-size:10px; padding:2px 6px; font-weight:800; display:none;">0</span>
@@ -837,8 +1031,8 @@ body{overflow:hidden}
 <section id="roomView" hidden>
   <div class="room-head">
     <button class="small-btn" data-view="home">←</button>
-    <img src="/logo.svg" style="width:36px; height:36px; border-radius:10px;">
-    <div class="room-title"><b>SAANKALP Virtual Library</b><small id="roomSub">Central Library</small></div>
+    <img src="/logo.png" style="width:36px; height:36px; border-radius:10px; object-fit:contain; background:#ffffff;" alt="LibNexa">
+    <div class="room-title"><b>LibNexa Virtual Library</b><small id="roomSub">Central Library</small></div>
     <span class="chip" id="timerChip">No seat</span>
     <button class="small-btn" id="roomViewNotifBtn" title="Notifications">🔔</button>
   </div>
@@ -865,7 +1059,7 @@ body{overflow:hidden}
 <!-- 3. STUDY ROOMS VIEW -->
 <section class="view" id="studyView" hidden>
   <div class="container study-room">
-    <div class="topbar"><div class="title"><h1>Study Together</h1><p>Join a focused SAANKALP room and study from the same pages.</p></div><button class="btn primary" id="newRoom">＋ New room</button></div>
+    <div class="topbar"><div class="title"><h1>Study Together</h1><p>Join a focused LibNexa room and study from the same pages.</p></div><button class="btn primary" id="newRoom">＋ New room</button></div>
     <div class="card" id="roomList"></div>
   </div>
 </section>
@@ -923,9 +1117,9 @@ body{overflow:hidden}
   <div class="modal" style="max-width:440px;">
     <button class="close" id="closeAuthModalBtn" onclick="closeAuthModal()" style="position:absolute; top:18px; right:18px;" title="Close Sign In">✕</button>
     <div style="text-align:center; margin-bottom:20px;">
-      <img src="/logo.svg" style="width:56px; height:56px; border-radius:14px; margin:0 auto 12px auto; display:block;">
+      <img src="/logo.png" style="width:56px; height:56px; border-radius:14px; margin:0 auto 12px auto; display:block; object-fit:contain; background:#ffffff;" alt="LibNexa">
       <h2 id="authModalTitle">Aspirant Registration</h2>
-      <p class="muted" id="authModalSubtitle" style="font-size:12px;">Fill in details to open your Virtual Library account</p>
+      <p class="muted" id="authModalSubtitle" style="font-size:12px;">Fill in details to open your LibNexa Virtual Library account</p>
     </div>
 
     <!-- Mobile & Basic Details Form -->
@@ -986,7 +1180,7 @@ body{overflow:hidden}
   <div class="modal" style="max-width:420px;">
     <button class="close" id="closeInstantEnterModalBtn" onclick="closeInstantEnterModal()" style="position:absolute; top:18px; right:18px;" title="Close">✕</button>
     <div style="text-align:center; margin-bottom:20px;">
-      <img src="/logo.svg" style="width:52px; height:52px; border-radius:14px; margin:0 auto 10px auto; display:block;">
+      <img src="/logo.png" style="width:52px; height:52px; border-radius:14px; margin:0 auto 10px auto; display:block; object-fit:contain; background:#ffffff;" alt="LibNexa">
       <h2>⚡ Instant Enter</h2>
       <p class="muted" style="font-size:13px;">Enter your registered 10-digit mobile number</p>
     </div>
@@ -1064,7 +1258,7 @@ function initFirebasePhoneAuth() {
 }
 
 function checkAuthSession() {
-  const saved = localStorage.getItem('saankalp_user');
+  const saved = localStorage.getItem('libnexa_user') || localStorage.getItem('saankalp_user');
   if (saved) {
     try {
       currentUserObj = JSON.parse(saved);
@@ -1119,11 +1313,11 @@ function enterAppDirectly() {
     };
     uid = currentUserObj.uid;
     names[uid] = currentUserObj.name;
-    localStorage.setItem("saankalp_user", JSON.stringify(currentUserObj));
+    localStorage.setItem("libnexa_user", JSON.stringify(currentUserObj)); localStorage.setItem("saankalp_user", JSON.stringify(currentUserObj));
   }
   updateUserHeaderUI();
   closeAuthModal();
-  toast(`✅ Welcome to SAANKALP Virtual Library!`);
+  toast(`✅ Welcome to LibNexa Virtual Library!`);
   go("home");
   render();
 }
@@ -1205,7 +1399,7 @@ function setupInstantEnterEvents() {
         currentUserObj = data.user;
         uid = currentUserObj.uid;
         names[uid] = currentUserObj.name;
-        localStorage.setItem("saankalp_user", JSON.stringify(currentUserObj));
+        localStorage.setItem("libnexa_user", JSON.stringify(currentUserObj)); localStorage.setItem("saankalp_user", JSON.stringify(currentUserObj));
 
         updateUserHeaderUI();
         closeInstantEnterModal();
@@ -1252,7 +1446,7 @@ function setupProfileDrawer() {
           currentUserObj.name = name;
           currentUserObj.exam_target = examTarget;
           names[uid] = name;
-          localStorage.setItem("saankalp_user", JSON.stringify(currentUserObj));
+          localStorage.setItem("libnexa_user", JSON.stringify(currentUserObj)); localStorage.setItem("saankalp_user", JSON.stringify(currentUserObj));
 
           updateUserHeaderUI();
           $("#profileDrawer")?.classList.remove("active");
@@ -1534,7 +1728,7 @@ function openAspirantProfile(targetUid) {
     </div>
   `;
 
-  openModal(`Aspirant Details`, `Saankalp Library Member`, modalBody);
+  openModal(`Aspirant Details`, `LibNexa Library Member`, modalBody);
 }
 
 function sendFriendRequest(targetUid) {
@@ -1588,7 +1782,7 @@ function performLogout() {
       socket.emit('leave_seat', { seatId: k, mins, seatLabel: seatLabel(s), name: nm(uid) });
     }
   }
-  localStorage.removeItem("saankalp_user");
+  localStorage.removeItem("libnexa_user"); localStorage.removeItem("saankalp_user");
   currentUserObj = null;
   uid = "user_demo";
   toggleSidebarMenu(false);
@@ -1756,7 +1950,7 @@ function setupAuthEvents() {
     currentUserObj = userResult;
     uid = currentUserObj.uid;
     names[uid] = currentUserObj.name;
-    localStorage.setItem("saankalp_user", JSON.stringify(currentUserObj));
+    localStorage.setItem("libnexa_user", JSON.stringify(currentUserObj)); localStorage.setItem("saankalp_user", JSON.stringify(currentUserObj));
 
     updateUserHeaderUI();
     closeAuthModal();
@@ -1839,7 +2033,7 @@ const avatar=(u,cls="mini-avatar")=>`<div class="${cls}" style="background:${col
 function toast(msg){const e=$("#toast");e.textContent=msg;e.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display="none",2400)}
 
 function getLocalLogsKey() {
-  return uid ? `saankalp_user_logs_${uid}` : 'saankalp_user_logs_demo';
+  return uid ? `libnexa_user_logs_${uid}` : 'libnexa_user_logs_demo';
 }
 
 function saveUserLogLocally(log) {
@@ -1947,7 +2141,7 @@ socket.on('profile_updated', ({ uid: updatedUid, name, examTarget }) => {
   if (currentUserObj && currentUserObj.uid === updatedUid) {
     currentUserObj.name = name;
     currentUserObj.exam_target = examTarget;
-    localStorage.setItem("saankalp_user", JSON.stringify(currentUserObj));
+    localStorage.setItem("libnexa_user", JSON.stringify(currentUserObj)); localStorage.setItem("saankalp_user", JSON.stringify(currentUserObj));
     updateUserHeaderUI();
   }
   render();
@@ -2800,7 +2994,7 @@ setInterval(tick,1000);
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
-      .then(reg => console.log('SAANKALP PWA Service Worker registered:', reg.scope))
+      .then(reg => console.log('LibNexa PWA Service Worker registered:', reg.scope))
       .catch(err => console.warn('PWA SW registration failed:', err));
   });
 }
@@ -2818,7 +3012,7 @@ function triggerPwaInstall() {
     deferredPwaPrompt.prompt();
     deferredPwaPrompt.userChoice.then((choice) => {
       if (choice.outcome === 'accepted') {
-        toast('🎉 Thank you for installing SAANKALP!');
+        toast('🎉 Thank you for installing LibNexa!');
       }
       deferredPwaPrompt = null;
     });

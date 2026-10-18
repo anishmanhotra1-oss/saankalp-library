@@ -148,10 +148,22 @@ if (RENDER_URL) {
 app.use('/api/upsc-analyzer', require('./upsc-analyzer/routes/analyzer-route'));
 app.use('/upsc-analyzer', express.static(path.join(__dirname, 'upsc-analyzer')));
 
-// Initialize SQLite Database
-const db = new sqlite3.Database(path.join(__dirname, 'saankalp.db'), (err) => {
+// Initialize SQLite Database (support Vercel /tmp writable directory)
+const dbPath = process.env.VERCEL
+  ? path.join('/tmp', 'saankalp.db')
+  : path.join(__dirname, 'saankalp.db');
+
+if (process.env.VERCEL && !fs.existsSync(dbPath) && fs.existsSync(path.join(__dirname, 'saankalp.db'))) {
+  try {
+    fs.copyFileSync(path.join(__dirname, 'saankalp.db'), dbPath);
+  } catch (e) {
+    console.error('Error copying db to /tmp on Vercel:', e);
+  }
+}
+
+const db = new sqlite3.Database(dbPath, (err) => {
   if (err) console.error('DB Connection Error:', err);
-  else console.log('Connected to SQLite Database: saankalp.db');
+  else console.log(`Connected to SQLite Database: ${path.basename(dbPath)}`);
 });
 
 // Helper function to get local YYYY-MM-DD date key
@@ -733,20 +745,25 @@ function getLocalIp() {
 const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
 
-server.listen(PORT, HOST, () => {
-  const localIp = getLocalIp();
-  console.log(`\n=================================================`);
-  console.log(`🚀 SAANKALP Virtual Library Server is Live!`);
-  console.log(`💻 Local PC Access:      http://localhost:${PORT}`);
-  console.log(`📱 Mobile / Network URL: http://${localIp}:${PORT}`);
-  console.log(`=================================================\n`);
-}).on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    const ALT_PORT = Number(PORT) + 1;
+if (!process.env.VERCEL) {
+  server.listen(PORT, HOST, () => {
     const localIp = getLocalIp();
-    console.log(`Port ${PORT} in use, starting on http://${localIp}:${ALT_PORT}`);
-    server.listen(ALT_PORT, HOST);
-  } else {
-    console.error('Server error:', err);
-  }
-});
+    console.log(`\n=================================================`);
+    console.log(`🚀 LibNexa Virtual Library Server is Live!`);
+    console.log(`💻 Local PC Access:      http://localhost:${PORT}`);
+    console.log(`📱 Mobile / Network URL: http://${localIp}:${PORT}`);
+    console.log(`=================================================\n`);
+  }).on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      const ALT_PORT = Number(PORT) + 1;
+      const localIp = getLocalIp();
+      console.log(`Port ${PORT} in use, starting on http://${localIp}:${ALT_PORT}`);
+      server.listen(ALT_PORT, HOST);
+    } else {
+      console.error('Server error:', err);
+    }
+  });
+}
+
+module.exports = app;
+
